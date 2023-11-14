@@ -22,3 +22,5 @@ jwt = JWTManager(app)
 with app.app_context():
     from project import models
     db.create_all()
+from project.api.v1.login import login_blueprint
+app.register_blueprint(login_blueprint, url_prefix='/v1')
