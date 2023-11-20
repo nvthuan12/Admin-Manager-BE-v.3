@@ -8,10 +8,10 @@ from project.models.permission import Permission
 from project.models.user_has_role import UserHasRole
 from project.models.booking_user import BookingUser
 from project.models.booking import Booking
+from sqlalchemy_pagination import paginate
 from flask_jwt_extended import JWTManager, jwt_required
 from collections import defaultdict
 from project.api.v1.has_permission import has_permission
-from werkzeug.routing import ValidationError
 
 user_blueprint = Blueprint('user', __name__)
 
@@ -58,8 +58,8 @@ def create_user():
 @jwt_required()
 @has_permission("view")
 def view_list_user():
-    # page = request.args.get('page', default=1, type=int)  # Lấy trang từ tham số truy vấn
-    # per_page = request.args.get('per_page', default=10)  # Số lượng item trên mỗi trang
+    page = request.args.get('page',1, type=int)  # Lấy trang từ tham số truy vấn
+    per_page = request.args.get('per_page',10)  # Số lượng item trên mỗi trang
 
     users = User.query.join(UserHasRole).join(Role).join(RoleHasPermission).join(Permission).with_entities(
         User.user_id,
@@ -98,16 +98,15 @@ def view_list_user():
         grouped_users[user_id]["permission_name"].add(user_dict["permission_name"])
     
     
-    # if per_page.lower() == 'all' or not per_page.isdigit():
-    #     paginated_users = list(grouped_users.values())
-    # else:
-    #     per_page = int(per_page)
-    #     start = (page - 1) * per_page
-    #     end = start + per_page
-    #     paginated_users = list(grouped_users.values())[start:end]
-
+        per_page = per_page
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_users = list(grouped_users.values())[start:end]
+    
     result = {
-    #    "current_page": page,
+        'total_pages': len(paginated_users) // per_page + 1,
+        'total_items': len(paginated_users),
+        'current_page': page,
         "list_users": [
         {
             "user_id": user["user_id"],
@@ -119,7 +118,7 @@ def view_list_user():
             "permission_id": list(user["permission_id"]),
             "permission_name": list(user["permission_name"])
         }
-        for user in grouped_users.values()
+        for user in paginated_users
     ]}
     return jsonify(result)
 
