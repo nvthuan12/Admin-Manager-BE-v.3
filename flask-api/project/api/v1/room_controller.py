@@ -49,8 +49,6 @@ def paginate(data, page, per_page):
     end = start + per_page
     return data[start:end]
 
-
-
 @room_blueprint.route("/rooms", methods=["POST"])
 @jwt_required()
 @has_permission("create")
