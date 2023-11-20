@@ -70,7 +70,7 @@ def view_list_user():
         Role.role_name,
         RoleHasPermission.permission_id,
         Permission.permission_name
-    ).all()
+    ).filter(Role.role_name != 'admin').all()
 
     grouped_users = defaultdict(lambda: {
         "user_id": None,
