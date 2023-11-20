@@ -71,7 +71,7 @@ def get_bookings():
 
 @booking_blueprint.route("/bookings", methods=["POST"])
 @jwt_required()
-@has_permission("admin")
+@has_permission("create")
 def book_room():
     data = request.get_json()
     room_id = data.get('room_id')
@@ -117,7 +117,7 @@ def book_room():
 
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["PUT"])
 @jwt_required()
-@has_permission("admin")
+@has_permission("update")
 def update_booking(booking_id):
     data = request.get_json()
     room_id = data.get('room_id')
@@ -171,7 +171,7 @@ def update_booking(booking_id):
 
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["DELETE"])
 @jwt_required()
-@has_permission("admin")
+@has_permission("delete")
 def delete_booking(booking_id):
     try:
         booking = Booking.query.get(booking_id)
