@@ -49,7 +49,7 @@ def get_rooms():
         })
 
     except Exception as e:
-        raise InternalServerError(description='Internal Server Error') from e
+        raise InternalServerError('Internal Server Error') from e
 
 @room_blueprint.route("/rooms", methods=["POST"])
 @jwt_required()
@@ -60,11 +60,11 @@ def create_room():
     status = data.get("status", 0)
 
     if not room_name or room_name.isspace():
-        raise BadRequest(description="Room name cannot be empty")
+        raise BadRequest("Room name cannot be empty")
 
     existing_room = Room.query.filter_by(room_name=room_name).first()
     if existing_room:
-        raise Conflict(description="Room already exists")
+        raise Conflict("Room already exists")
 
     new_room = Room(room_name=room_name, status=status)
     db.session.add(new_room)
@@ -81,17 +81,17 @@ def update_room(room_id):
     room_name = data.get("room_name")
 
     if not room_name or room_name.isspace():
-        raise BadRequest(description="Room name cannot be empty")
+        raise BadRequest("Room name cannot be empty")
 
     existing_room = Room.query.filter(
         Room.room_id != room_id, Room.room_name == room_name).first()
     if existing_room:
-        raise BadRequest(description="Room name already exists")
+        raise BadRequest("Room name already exists")
 
     room_to_update = Room.query.get(room_id)
 
     if not room_to_update:
-        raise NotFound(description="Room not found")
+        raise NotFound("Room not found")
 
     room_to_update.room_name = room_name
     db.session.commit()
@@ -105,10 +105,10 @@ def delete_room(room_id):
     room_to_delete = Room.query.get(room_id)
 
     if not room_to_delete:
-        raise NotFound(description="Room not found")
+        raise NotFound("Room not found")
 
     if room_to_delete.status == 1:
-        raise BadRequest(description="Cannot delete a busy room")
+        raise BadRequest("Cannot delete a busy room")
 
     bookings_to_delete = Booking.query.filter_by(room_id=room_id).all()
     booking_ids = [booking.booking_id for booking in bookings_to_delete]
