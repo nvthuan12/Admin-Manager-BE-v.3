@@ -8,7 +8,8 @@ from flask_jwt_extended import JWTManager, jwt_required
 from project.api.v1.has_permission import has_permission
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
-from sqlalchemy_pagination import paginate
+from itertools import islice
+from math import ceil
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
@@ -16,9 +17,6 @@ booking_blueprint = Blueprint('booking_controller', __name__)
 @jwt_required()
 def get_bookings():
     try:
-        page = request.args.get('page', default=1, type=int)
-        per_page = request.args.get('per_page', default=10, type=int)
-        
         bookings = Booking.query.join(Room).join(BookingUser).join(User).with_entities(
             Booking.booking_id,
             Booking.room_id,
@@ -27,14 +25,11 @@ def get_bookings():
             Room.room_name,
             BookingUser.user_id,
             User.user_name
-        ).paginate(page=page, per_page=per_page, error_out=False)
-
-        paginated_bookings = bookings.paginate(page=page, per_page=per_page, error_out=False)
-
+        ).all()
 
         grouped_bookings = {}
 
-        for booking in paginated_bookings.items:
+        for booking in bookings:
             booking_dict = booking._asdict()
             booking_id = booking_dict["booking_id"]
 
@@ -58,22 +53,29 @@ def get_bookings():
                 '%Y-%m-%d %H:%M:%S')
             grouped_bookings[booking_id]["time_start"] = booking_dict["time_start"].strftime(
                 '%Y-%m-%d %H:%M:%S')
-                
-        paginated_grouped_bookings = paginate(grouped_bookings, page, per_page)
+
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        start = (page - 1) * per_page
+        end = start + per_page
+
+        paginated_grouped_bookings = list(
+            islice(grouped_bookings.values(), start, end))
+
+        total_items = len(grouped_bookings)
+        total_pages = ceil(total_items / per_page)
 
         result = {
-            "bookings": paginated_grouped_bookings.items,
-            "total_pages": paginated_grouped_bookings.pages,
-            "current_page": paginated_grouped_bookings.page
+            "bookings": paginated_grouped_bookings,
+            "total_items": total_items,
+            "current_page": page,
+            "per_page": per_page,
+            "total_pages": total_pages
         }
+
         return jsonify(result)
     except Exception as e:
         raise InternalServerError(description='Internal Server Error') from e
-
-def paginate(data, page, per_page):
-    start = (page - 1) * per_page
-    end = start + per_page
-    return data[start:end]
 
 @booking_blueprint.route("/bookings", methods=["POST"])
 @jwt_required()
@@ -108,9 +110,9 @@ def book_room():
             db.session.commit()
 
             for user_id in user_ids:
-                employee_booking = BookingUser(
+                user_booking = BookingUser(
                     user_id=user_id, booking_id=new_booking.booking_id)
-                db.session.add(employee_booking)
+                db.session.add(user_booking)
 
             db.session.commit()
             return jsonify({'message': 'Booking created successfully'})
@@ -119,7 +121,6 @@ def book_room():
             raise InternalServerError(description='Internal Server Error') from e
     else:
         raise BadRequest(description='Invalid time input')
-
 
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["PUT"])
 @jwt_required()
@@ -155,15 +156,15 @@ def update_booking(booking_id):
             booking.time_end = time_end
 
             if not user_ids:
-                raise BadRequest(description='At least one employee must be selected')
+                raise BadRequest(description='At least one user must be selected')
 
-            for employee_booking in booking.booking_employees:
-                db.session.delete(employee_booking)
+            for user_booking in booking.booking_users:
+                db.session.delete(user_booking)
 
             for user_id in user_ids:
-                employee_booking = BookingUser(
+                user_booking = BookingUser(
                     user_id=user_id, booking_id=booking.booking_id)
-                db.session.add(employee_booking)
+                db.session.add(user_booking)
 
             db.session.commit()
             return jsonify({'message': 'Booking updated successfully'})
@@ -172,8 +173,6 @@ def update_booking(booking_id):
             raise InternalServerError(description='Internal Server Error') from e
     else:
         raise BadRequest(description='Invalid time input or missing user_id')
-
-
 
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["DELETE"])
 @jwt_required()
