@@ -8,6 +8,7 @@ from flask_jwt_extended import JWTManager, jwt_required
 from project.api.v1.has_permission import has_permission
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
+from sqlalchemy_pagination import paginate
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
@@ -26,8 +27,7 @@ def get_bookings():
             Room.room_name,
             BookingUser.user_id,
             User.user_name
-            
-        ).all()
+        ).paginate(page=page, per_page=per_page, error_out=False)
 
         paginated_bookings = bookings.paginate(page=page, per_page=per_page, error_out=False)
 
@@ -58,16 +58,22 @@ def get_bookings():
                 '%Y-%m-%d %H:%M:%S')
             grouped_bookings[booking_id]["time_start"] = booking_dict["time_start"].strftime(
                 '%Y-%m-%d %H:%M:%S')
+                
+        paginated_grouped_bookings = paginate(grouped_bookings, page, per_page)
 
         result = {
-            "bookings": list(grouped_bookings.values()),
-            "total_pages": paginated_bookings.pages,
-            "current_page": paginated_bookings.page
+            "bookings": paginated_grouped_bookings.items,
+            "total_pages": paginated_grouped_bookings.pages,
+            "current_page": paginated_grouped_bookings.page
         }
         return jsonify(result)
     except Exception as e:
         raise InternalServerError(description='Internal Server Error') from e
 
+def paginate(data, page, per_page):
+    start = (page - 1) * per_page
+    end = start + per_page
+    return data[start:end]
 
 @booking_blueprint.route("/bookings", methods=["POST"])
 @jwt_required()
