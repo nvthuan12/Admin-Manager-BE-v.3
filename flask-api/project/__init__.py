@@ -21,7 +21,7 @@ jwt = JWTManager(app)
 with app.app_context():
     from project import models
     db.create_all()
-
+    
 from project.api.v1.login_controller import login_blueprint
 from project.api.v1.user_controller import user_blueprint
 from project.api.v1.room_controller import room_blueprint

@@ -18,10 +18,11 @@ def get_rooms():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     
-    rooms = Room.query.all()
+    all_rooms = Room.query.all()
     
-    rooms = paginate(rooms, page, per_page)
-    for room in rooms:
+    paginated_rooms = paginate(all_rooms, page, per_page)
+
+    for room in paginated_rooms:
         current_time = datetime.now()
         current_bookings = Booking.query.filter(
             Booking.room_id == room.room_id,
@@ -36,13 +37,17 @@ def get_rooms():
 
     db.session.commit()
     return jsonify({
-        "rooms": [room.serialize() for room in rooms.items],
-        "total_items": rooms.total,
-        "current_page": rooms.page,
-        "per_page": rooms.per_page,
-        "total_pages": rooms.pages
+        "rooms": [room.serialize() for room in paginated_rooms],
+        "total_items": len(all_rooms),
+        "current_page": page,
+        "per_page": per_page,
+        "total_pages": (len(all_rooms) + per_page - 1) // per_page
     })
 
+def paginate(data, page, per_page):
+    start = (page - 1) * per_page
+    end = start + per_page
+    return data[start:end]
 
 @room_blueprint.route("/rooms", methods=["POST"])
 @jwt_required()
