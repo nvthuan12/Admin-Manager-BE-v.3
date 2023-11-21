@@ -27,11 +27,11 @@ class Room(db.Model):
     @validates('room_name')
     def validate_room_name(self, key, room_name):
         if len(room_name) > 80:
-            raise BadRequest('Room name exceeds maximum length')
+            raise BadRequest("Room name exceeds maximum length")
         return room_name
 
     @validates('status')
     def validate_status(self, key, status):
         if status not in [True, False]:
-            raise BadRequest('Invalid status value, must be True or False')
+            raise BadRequest("Invalid status value, must be True or False")
         return status

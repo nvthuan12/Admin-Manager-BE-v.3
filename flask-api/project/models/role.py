@@ -19,5 +19,5 @@ class Role(db.Model):
     @validates('role_name')
     def validate_role_name(self, key, role_name):
         if len(role_name) > 80:
-            raise BadRequest('Role name  exceeds maximum lengt')
+            raise BadRequest("Role name  exceeds maximum lengt")
         return role_name

@@ -19,5 +19,5 @@ class Permission(db.Model):
     @validates('permission_name')
     def validate_permission_name(self, key, permission_name):
         if len(permission_name) > 80:
-            raise BadRequest('Permission name exceeds maximum length')
+            raise BadRequest("Permission name exceeds maximum length.")
         return permission_name

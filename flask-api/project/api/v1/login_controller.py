@@ -1,14 +1,10 @@
 from flask import Blueprint, request, jsonify
-from werkzeug.exceptions import HTTPException, BadRequest, Unauthorized
+from werkzeug.exceptions import BadRequest, Unauthorized
 from project import app,db
 from project.models.user import User
-from project.models.role import Role
-from project.models.role_has_permission import RoleHasPermission
-from project.models.permission import Permission
-from project.models.user_has_role import UserHasRole
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, set_access_cookies, unset_jwt_cookies,get_jwt_identity,get_jwt
+from flask_jwt_extended import jwt_required, create_access_token, set_access_cookies, unset_jwt_cookies,get_jwt_identity,get_jwt
 from datetime import timedelta
-from project.api.v1.has_permission import has_permission, get_role_names
+from project.api.v1.has_permission import  get_role_names
 
 login_blueprint = Blueprint('login', __name__)
 

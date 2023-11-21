@@ -10,7 +10,7 @@ class Booking(db.Model):
     time_end = db.Column(db.TIMESTAMP, nullable=False)
     room_id = db.Column(db.Integer, db.ForeignKey('room.room_id'))
     booking_user = db.relationship('BookingUser', backref='booking')
-
+    
     def serialize(self):
         return {
             'booking_id': self.booking_id,
@@ -28,10 +28,19 @@ class Booking(db.Model):
             raise BadRequest("Invalid booking_id format. Must be an integer.")
         return booking_id 
 
-    @validates('time_start', 'time_end')
-    def validate_time(self, key, value):
-        if key == 'time_start' and value <= datetime.now():
-            raise BadRequest('Start time must be in the future')
-        if key == 'time_end' and value <= self.time_start :
-            raise BadRequest('End time must be after start time')
-        return value
+    # @validates('time_start')
+    # def validate_time_start(self, key, time_start):
+
+    #     if time_start < datetime.datetime.utcnow():
+    #         raise BadRequest("must be in the future")
+    #     if time_start <= self.time_end:
+    #         print("1")
+    #         raise BadRequest("time_start must be greater than time_end")
+    #     return time_start
+
+    # @validates('time_end')
+    # def validate_time_end(self, key, time_end):
+    #     if time_end <= datetime.datetime.utcnow():
+    #         print("2")
+    #         raise BadRequest("time_end must be in the future")
+    #     return time_end

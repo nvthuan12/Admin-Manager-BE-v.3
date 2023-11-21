@@ -39,15 +39,15 @@ class User(db.Model):
     @validates('user_name')
     def validate_user_name(self, key, user_name):
         if len(user_name) > 80:
-            raise BadRequest('User name exceeds maximum length')
+            raise BadRequest("User name exceeds maximum length")
         return user_name
     
     @validates('email') 
     def validate_email(self, key, email):
         if len(email) > 80:
-            raise BadRequest('User name exceeds maximum length')
+            raise BadRequest("User name exceeds maximum length")
         if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-            raise BadRequest('Invalid email format') 
+            raise BadRequest("Invalid email format") 
         return email
     
     @validates('phone_number') 
