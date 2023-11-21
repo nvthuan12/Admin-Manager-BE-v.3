@@ -37,7 +37,7 @@ def login():
 
     access_token = create_access_token(identity=user.user_id, expires_delta=timedelta(days=1))
     role_name = get_role_names(user.user_id)
-    response = jsonify(message='Logged in successfully', access_token=access_token, role_name=role_name)
+    response = jsonify(message='Logged in successfully', access_token=access_token, role_name=role_name,user_name=user.user_name )
     set_access_cookies(response, access_token)
     return response, 200
 
