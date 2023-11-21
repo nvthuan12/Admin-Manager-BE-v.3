@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
 from itertools import islice
 from math import ceil
+from datetime import datetime
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
@@ -20,6 +21,7 @@ def get_bookings():
         bookings = Booking.query.join(Room).join(BookingUser).join(User).with_entities(
             Booking.booking_id,
             Booking.room_id,
+            Booking.title,
             Booking.time_start,
             Booking.time_end,
             Room.room_name,
@@ -39,6 +41,7 @@ def get_bookings():
                     "user_name": [],
                     "room_id": None,
                     "room_name": None,
+                    "title": None,
                     "time_end": None,
                     "time_start": None,
                     "user_id": []
@@ -49,6 +52,7 @@ def get_bookings():
                 booking_dict["user_name"])
             grouped_bookings[booking_id]["room_id"] = booking_dict["room_id"]
             grouped_bookings[booking_id]["room_name"] = booking_dict["room_name"]
+            grouped_bookings[booking_id]["title"] = booking_dict["title"] 
             grouped_bookings[booking_id]["time_end"] = booking_dict["time_end"].strftime(
                 '%Y-%m-%d %H:%M:%S')
             grouped_bookings[booking_id]["time_start"] = booking_dict["time_start"].strftime(
@@ -72,7 +76,6 @@ def get_bookings():
             "per_page": per_page,
             "total_pages": total_pages
         }
-
         return jsonify(result)
     except Exception as e:
         raise InternalServerError('Internal Server Error') from e
@@ -83,15 +86,19 @@ def get_bookings():
 def book_room():
     data = request.get_json()
     room_id = data.get('room_id')
-    time_start = data.get('time_start')
-    time_end = data.get('time_end')
+    title = data.get('title')
+    time_start_str = data.get('time_start')
+    time_end_str = data.get('time_end')
     user_ids = data.get('user_id')
 
     if not user_ids:
         raise BadRequest('No staff members have been added to the meeting yet')
 
-    if time_start == time_end:
+    if time_start_str == time_end_str:
         raise BadRequest('Invalid time input')
+
+    time_start = datetime.strptime(time_start_str, '%Y-%m-%d %H:%M:%S')
+    time_end = datetime.strptime(time_end_str, '%Y-%m-%d %H:%M:%S')
 
     if time_start is not None and time_end is not None and time_start < time_end:
         existing_booking = Booking.query.filter(
@@ -105,7 +112,7 @@ def book_room():
 
         try:
             new_booking = Booking(
-                room_id=room_id, time_start=time_start, time_end=time_end)
+                room_id=room_id, title=title, time_start=time_start, time_end=time_end)
             db.session.add(new_booking)
             db.session.commit()
 
@@ -117,6 +124,7 @@ def book_room():
             db.session.commit()
             return jsonify({'message': 'Booking created successfully'})
         except Exception as e:
+            print(e)
             db.session.rollback()
             raise InternalServerError('Internal Server Error') from e
     else:
@@ -128,11 +136,15 @@ def book_room():
 def update_booking(booking_id):
     data = request.get_json()
     room_id = data.get('room_id')
-    time_start = data.get('time_start')
-    time_end = data.get('time_end')
+    title = data.get('title')
+    time_start_str = data.get('time_start')
+    time_end_str = data.get('time_end')
     user_ids = data.get('user_id')
 
-    if time_start is not None and time_end is not None and user_ids is not None:
+    if time_start_str is not None and time_end_str is not None and user_ids is not None:
+        time_start = datetime.strptime(time_start_str, '%Y-%m-%d %H:%M:%S')
+        time_end = datetime.strptime(time_end_str, '%Y-%m-%d %H:%M:%S')
+
         if time_end <= time_start:
             raise BadRequest('Invalid time input')
 
@@ -152,13 +164,14 @@ def update_booking(booking_id):
                 raise NotFound('Booking not found')
 
             booking.room_id = room_id
+            booking.title = title
             booking.time_start = time_start
             booking.time_end = time_end
 
             if not user_ids:
                 raise BadRequest('At least one user must be selected')
 
-            for user_booking in booking.booking_users:
+            for user_booking in booking.booking_user:
                 db.session.delete(user_booking)
 
             for user_id in user_ids:
@@ -169,6 +182,7 @@ def update_booking(booking_id):
             db.session.commit()
             return jsonify({'message': 'Booking updated successfully'})
         except Exception as e:
+            print(e)
             db.session.rollback()
             raise InternalServerError('Internal Server Error') from e
     else:
