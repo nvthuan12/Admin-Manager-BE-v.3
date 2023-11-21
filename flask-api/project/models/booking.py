@@ -6,6 +6,7 @@ from datetime import datetime
 class Booking(db.Model):
     __tablename__ = "booking"
     booking_id = db.Column(db.Integer, primary_key=True)
+    title=  db.Column(db.String(80), nullable=False)
     time_start = db.Column(db.TIMESTAMP, nullable=False)
     time_end = db.Column(db.TIMESTAMP, nullable=False)
     room_id = db.Column(db.Integer, db.ForeignKey('room.room_id'))
@@ -28,19 +29,8 @@ class Booking(db.Model):
             raise BadRequest("Invalid booking_id format. Must be an integer.")
         return booking_id 
 
-    # @validates('time_start')
-    # def validate_time_start(self, key, time_start):
-
-    #     if time_start < datetime.datetime.utcnow():
-    #         raise BadRequest("must be in the future")
-    #     if time_start <= self.time_end:
-    #         print("1")
-    #         raise BadRequest("time_start must be greater than time_end")
-    #     return time_start
-
-    # @validates('time_end')
-    # def validate_time_end(self, key, time_end):
-    #     if time_end <= datetime.datetime.utcnow():
-    #         print("2")
-    #         raise BadRequest("time_end must be in the future")
-    #     return time_end
+    @validates('title')
+    def validate_title(self, key, title):
+        if len(title) > 80:
+            raise BadRequest("Title exceeds maximum length.")
+        return title
