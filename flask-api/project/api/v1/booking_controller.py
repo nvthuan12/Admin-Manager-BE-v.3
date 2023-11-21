@@ -87,19 +87,16 @@ def book_room():
     data = request.get_json()
     room_id = data.get('room_id')
     title = data.get('title')
-    time_start_str = data.get('time_start')
-    time_end_str = data.get('time_end')
+    time_start = data.get('time_start')
+    time_end = data.get('time_end')
     user_ids = data.get('user_id')
 
     if not user_ids:
         raise BadRequest('No staff members have been added to the meeting yet')
 
-    if time_start_str == time_end_str:
+    if time_start == time_end:
         raise BadRequest('Invalid time input')
-
-    time_start = datetime.strptime(time_start_str, '%Y-%m-%d %H:%M:%S')
-    time_end = datetime.strptime(time_end_str, '%Y-%m-%d %H:%M:%S')
-
+    
     if time_start is not None and time_end is not None and time_start < time_end:
         existing_booking = Booking.query.filter(
             Booking.room_id == room_id,
@@ -137,13 +134,11 @@ def update_booking(booking_id):
     data = request.get_json()
     room_id = data.get('room_id')
     title = data.get('title')
-    time_start_str = data.get('time_start')
-    time_end_str = data.get('time_end')
+    time_start = data.get('time_start')
+    time_end = data.get('time_end')
     user_ids = data.get('user_id')
 
-    if time_start_str is not None and time_end_str is not None and user_ids is not None:
-        time_start = datetime.strptime(time_start_str, '%Y-%m-%d %H:%M:%S')
-        time_end = datetime.strptime(time_end_str, '%Y-%m-%d %H:%M:%S')
+    if time_start is not None and time_end is not None and user_ids is not None:
 
         if time_end <= time_start:
             raise BadRequest('Invalid time input')
