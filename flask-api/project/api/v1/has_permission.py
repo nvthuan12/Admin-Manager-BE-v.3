@@ -1,14 +1,12 @@
 from functools import wraps
-from flask import request, jsonify
 from project import db
 from project.models.user import User 
 from project.models.role import Role 
 from project.models.user_has_role import UserHasRole 
 from project.models.permission import Permission 
 from project.models.role_has_permission import RoleHasPermission 
-from flask_jwt_extended import JWTManager,get_jwt_identity
+from flask_jwt_extended import get_jwt_identity
 from werkzeug.exceptions import Unauthorized, Forbidden
-from collections import defaultdict
 
 def get_role_names(user_logged_id):
     role_names = (db.session.query(Role.role_name).

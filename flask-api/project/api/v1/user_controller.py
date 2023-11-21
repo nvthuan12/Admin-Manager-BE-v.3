@@ -7,9 +7,7 @@ from project.models.role_has_permission import RoleHasPermission
 from project.models.permission import Permission
 from project.models.user_has_role import UserHasRole
 from project.models.booking_user import BookingUser
-from project.models.booking import Booking
-from sqlalchemy_pagination import paginate
-from flask_jwt_extended import JWTManager, jwt_required
+from flask_jwt_extended import jwt_required
 from collections import defaultdict
 from project.api.v1.has_permission import has_permission
 
