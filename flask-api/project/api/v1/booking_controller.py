@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
 from itertools import islice
 from math import ceil
+from datetime import datetime
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
@@ -72,7 +73,6 @@ def get_bookings():
             "per_page": per_page,
             "total_pages": total_pages
         }
-
         return jsonify(result)
     except Exception as e:
         raise InternalServerError('Internal Server Error') from e
@@ -83,15 +83,18 @@ def get_bookings():
 def book_room():
     data = request.get_json()
     room_id = data.get('room_id')
-    time_start = data.get('time_start')
-    time_end = data.get('time_end')
+    time_start_str = data.get('time_start')
+    time_end_str = data.get('time_end')
     user_ids = data.get('user_id')
 
     if not user_ids:
         raise BadRequest('No staff members have been added to the meeting yet')
 
-    if time_start == time_end:
+    if time_start_str == time_end_str:
         raise BadRequest('Invalid time input')
+
+    time_start = datetime.strptime(time_start_str, '%Y-%m-%d %H:%M:%S')
+    time_end = datetime.strptime(time_end_str, '%Y-%m-%d %H:%M:%S')
 
     if time_start is not None and time_end is not None and time_start < time_end:
         existing_booking = Booking.query.filter(
@@ -117,6 +120,7 @@ def book_room():
             db.session.commit()
             return jsonify({'message': 'Booking created successfully'})
         except Exception as e:
+            print(e)
             db.session.rollback()
             raise InternalServerError('Internal Server Error') from e
     else:
