@@ -58,8 +58,8 @@ def create_user():
 @jwt_required()
 @has_permission("view")
 def view_list_user():
-    page = request.args.get('page',1, type=int)  # Lấy trang từ tham số truy vấn
-    per_page = request.args.get('per_page',10)  # Số lượng item trên mỗi trang
+    page = int(request.args.get('page',1)) 
+    per_page = int(request.args.get('per_page',10)) 
 
     users = User.query.join(UserHasRole).join(Role).join(RoleHasPermission).join(Permission).with_entities(
         User.user_id,
@@ -70,7 +70,7 @@ def view_list_user():
         Role.role_name,
         RoleHasPermission.permission_id,
         Permission.permission_name
-    ).filter(Role.role_name != 'admin').all()
+    ).all()
 
     grouped_users = defaultdict(lambda: {
         "user_id": None,
@@ -97,7 +97,6 @@ def view_list_user():
         grouped_users[user_id]["permission_id"].add(user_dict["permission_id"])
         grouped_users[user_id]["permission_name"].add(user_dict["permission_name"])
     
-    
         per_page = per_page
         start = (page - 1) * per_page
         end = start + per_page
@@ -122,7 +121,7 @@ def view_list_user():
     ]}
     return jsonify(result)
 
-@user_blueprint.route('/users/<user_id>', methods=['PUT'])
+@user_blueprint.route('/users/<int:user_id>', methods=['PUT'])
 @jwt_required()
 @has_permission("update")
 def update_user(user_id):
@@ -130,46 +129,39 @@ def update_user(user_id):
     user_name = data.get('user_name')
     email = data.get('email')
     phone_number = data.get('phone_number')
-    password = data.get('password')
     role_ids = data.get('role_id')
-    try:
-        user_id = int(user_id) 
-    except BadRequest:
-        raise BadRequest("Invalid user_id format. Must be an integer.")
     
     user = User.query.get(user_id)
     if not user:
         raise NotFound("User not found with provided user_id.")
 
-    if not user_name or not email or not phone_number or not password or not role_ids:
+    if not user_name or not email or not phone_number or not role_ids:
         raise BadRequest("Missing required fields")
     
     existing_email = User.query.filter(User.email == email, User.user_id != user_id).first()
     if existing_email:
         raise Conflict("Email already exists")
+    
     existing_phone = User.query.filter(User.phone_number == phone_number, User.user_id != user_id).first()
     if existing_phone:
         raise Conflict("Phone number already exists")
+    
     user.user_name = user_name  
     user.email = email   
     user.phone_number = phone_number   
-    user.set_password(password)
+
     UserHasRole.query.filter_by(user_id=user_id).delete()
     for role_id in role_ids:
         new_user_role = UserHasRole(user_id=user_id, role_id=role_id)
         db.session.add(new_user_role)
+
     db.session.commit()
     return jsonify({'message': 'Updated user successfully'}),200
 
-@user_blueprint.route('/users/<user_id>', methods=['DELETE'])
+@user_blueprint.route('/users/<int:user_id>', methods=['DELETE'])
 @jwt_required()
 @has_permission("delete")
 def delete_user(user_id):
-    try:
-        user_id = int(user_id) 
-    except BadRequest:
-        raise BadRequest("Invalid user_id format. Must be an integer.")
-    
     user=User.query.get(user_id)
     if not user:
         raise NotFound("User not found with provided user_id.")
@@ -177,9 +169,11 @@ def delete_user(user_id):
     booking_users = BookingUser.query.filter_by(user_id=user_id).all()
     for booking_user in booking_users:
         db.session.delete(booking_user)
+
     user_has_roles=UserHasRole.query.filter_by(user_id=user_id).all()
     for user_has_role in user_has_roles:
         db.session.delete(user_has_role)
+
     db.session.delete(user)
     db.session.commit()
     return jsonify({'message': 'Delete user successfully'}), 200

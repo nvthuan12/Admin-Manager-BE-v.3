@@ -1,5 +1,8 @@
+import re
 from project.models import db
 from flask_bcrypt import bcrypt
+from sqlalchemy.orm import validates  
+from werkzeug.exceptions import BadRequest  
 
 class User(db.Model):
     __tablename__ = "user"
@@ -24,3 +27,36 @@ class User(db.Model):
             'email': self.email,
             'phone_number': self.phone_number
         }
+    
+    @validates('user_id')
+    def validate_username(self, key, user_id):
+        try:
+            user_id = int(user_id) 
+        except BadRequest:
+            raise BadRequest("Invalid user_id format. Must be an integer.")
+        return user_id 
+    
+    @validates('user_name')
+    def validate_user_name(self, key, user_name):
+        if len(user_name) > 80:
+            raise BadRequest('User name exceeds maximum length')
+        return user_name
+    
+    @validates('email') 
+    def validate_email(self, key, email):
+        if len(email) > 80:
+            raise BadRequest('User name exceeds maximum length')
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            raise BadRequest('Invalid email format') 
+        return email
+    
+    @validates('phone_number') 
+    def validate_phone_number(self, key, phone_number):
+        if len(phone_number) > 11:
+            raise BadRequest('Phone number exceeds maximum length')
+        if not re.match(r'^0\d{9}$' , phone_number):
+            raise BadRequest('Invalid phone number format') 
+        return phone_number
+    
+
+    
