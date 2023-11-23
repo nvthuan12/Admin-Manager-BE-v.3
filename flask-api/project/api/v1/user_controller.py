@@ -15,7 +15,7 @@ user_blueprint = Blueprint('user', __name__)
 
 @user_blueprint.route('/users', methods=['GET'])
 @jwt_required()
-@has_permission('view')
+@has_permission("view")
 def view_list_user():
     page = int(request.args.get('page',1)) 
     per_page = int(request.args.get('per_page',10)) 
@@ -117,7 +117,7 @@ def create_user():
         return jsonify({'message': 'Created user successfully'}),200
     except Exception as e:
         db.session.rollback()
-        raise  InternalServerError("Failed to create user")
+        raise  InternalServerError() from e
 
 @user_blueprint.route('/users/<int:user_id>', methods=['PUT'])
 @jwt_required()
@@ -143,22 +143,25 @@ def update_user(user_id):
     existing_phone = User.query.filter(User.phone_number == phone_number, User.user_id != user_id).first()
     if existing_phone:
         raise Conflict("Phone number already exists")
+    try:
+        user.user_name = user_name  
+        user.email = email   
+        user.phone_number = phone_number   
+
+        UserHasRole.query.filter_by(user_id=user_id).delete()
+        for role_id in role_ids:
+            new_user_role = UserHasRole(user_id=user_id, role_id=role_id)
+            db.session.add(new_user_role)
+
+        db.session.commit()
+        return jsonify({'message': 'Updated user successfully'}),200
+    except Exception as e:
+        db.session.rollback()
+        raise InternalServerError() from e
     
-    user.user_name = user_name  
-    user.email = email   
-    user.phone_number = phone_number   
-
-    UserHasRole.query.filter_by(user_id=user_id).delete()
-    for role_id in role_ids:
-        new_user_role = UserHasRole(user_id=user_id, role_id=role_id)
-        db.session.add(new_user_role)
-
-    db.session.commit()
-    return jsonify({'message': 'Updated user successfully'}),200
-
 @user_blueprint.route('/users/<int:user_id>', methods=['DELETE'])
 @jwt_required()
-@has_permission('delete')
+@has_permission("delete")
 def delete_user(user_id):
     user=User.query.get(user_id)
     if not user:

@@ -26,10 +26,12 @@ from project.api.v1.login_controller import login_blueprint
 from project.api.v1.user_controller import user_blueprint
 from project.api.v1.room_controller import room_blueprint
 from project.api.v1.booking_controller import booking_blueprint
+
 app.register_blueprint(login_blueprint, url_prefix='/v1')
 app.register_blueprint(user_blueprint, url_prefix='/v1')
 app.register_blueprint(room_blueprint, url_prefix='/v1')
 app.register_blueprint(booking_blueprint, url_prefix='/v1')
+
 from project.api.common.error_handle import handle_werkzeug_exception
 from werkzeug.exceptions import HTTPException 
 app.register_error_handler(HTTPException, handle_werkzeug_exception)
