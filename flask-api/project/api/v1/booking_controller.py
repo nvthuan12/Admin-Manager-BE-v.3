@@ -126,7 +126,7 @@ def book_room():
                 db.session.rollback()
                 raise InternalServerError('Internal Server Error') from e
         else:
-            raise BadRequest('Invalid or empty values for room_id, time_start, or time_end')
+            raise BadRequest('Invalid or empty values for room name, time start, or time end')
     else:
         raise BadRequest('Invalid time input')
 
