@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
 from itertools import islice
 from math import ceil
-from datetime import datetime
+from collections import defaultdict
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
@@ -29,42 +29,34 @@ def get_bookings():
             User.user_name
         ).all()
 
-        grouped_bookings = {}
+        grouped_bookings = defaultdict(lambda: {
+            "booking_id": None,
+            "user_name": [],
+            "room_id": None,
+            "room_name": None,
+            "title": None,
+            "time_end": None,
+            "time_start": None,
+            "user_id": []
+        })
 
         for booking in bookings:
-            booking_dict = booking._asdict()
-            booking_id = booking_dict["booking_id"]
-
-            if booking_id not in grouped_bookings:
-                grouped_bookings[booking_id] = {
-                    "booking_id": booking_id,
-                    "user_name": [],
-                    "room_id": None,
-                    "room_name": None,
-                    "title": None,
-                    "time_end": None,
-                    "time_start": None,
-                    "user_id": []
-                }
-            grouped_bookings[booking_id]["user_id"].append(
-                booking_dict["user_id"])
-            grouped_bookings[booking_id]["user_name"].append(
-                booking_dict["user_name"])
-            grouped_bookings[booking_id]["room_id"] = booking_dict["room_id"]
-            grouped_bookings[booking_id]["room_name"] = booking_dict["room_name"]
-            grouped_bookings[booking_id]["title"] = booking_dict["title"] 
-            grouped_bookings[booking_id]["time_end"] = booking_dict["time_end"].strftime(
-                '%Y-%m-%d %H:%M:%S')
-            grouped_bookings[booking_id]["time_start"] = booking_dict["time_start"].strftime(
-                '%Y-%m-%d %H:%M:%S')
+            booking_id = booking.booking_id
+            grouped_bookings[booking_id]["booking_id"] = booking_id
+            grouped_bookings[booking_id]["user_id"].append(booking.user_id)
+            grouped_bookings[booking_id]["user_name"].append(booking.user_name)
+            grouped_bookings[booking_id]["room_id"] = booking.room_id
+            grouped_bookings[booking_id]["room_name"] = booking.room_name
+            grouped_bookings[booking_id]["title"] = booking.title 
+            grouped_bookings[booking_id]["time_end"] = booking.time_end.strftime('%Y-%m-%d %H:%M:%S')
+            grouped_bookings[booking_id]["time_start"] = booking.time_start.strftime('%Y-%m-%d %H:%M:%S')
 
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
         start = (page - 1) * per_page
         end = start + per_page
 
-        paginated_grouped_bookings = list(
-            islice(grouped_bookings.values(), start, end))
+        paginated_grouped_bookings = list(islice(grouped_bookings.values(), start, end))
 
         total_items = len(grouped_bookings)
         total_pages = ceil(total_items / per_page)
@@ -78,7 +70,7 @@ def get_bookings():
         }
         return jsonify(result)
     except Exception as e:
-        raise InternalServerError('Internal Server Error') from e
+        raise InternalServerError()
 
 @booking_blueprint.route("/bookings", methods=["POST"])
 @jwt_required()
@@ -94,7 +86,7 @@ def book_room():
     if not user_ids:
         raise BadRequest('No staff members have been added to the meeting yet')
 
-    if time_start == time_end or time_start > time_end:
+    if time_start >= time_end:
         raise BadRequest('Invalid time input. End time must be greater than start time.')
 
     if not (room_id and time_start and time_end and title and title.strip()):
