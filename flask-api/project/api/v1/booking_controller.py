@@ -189,7 +189,13 @@ def update_booking(booking_id):
 def delete_booking(booking_id):
     try:
         booking = Booking.query.get(booking_id)
+
         if booking:
+            room_status = Room.query.get(booking.room_id).status
+
+            if room_status:
+                raise BadRequest('Cannot delete the booking, the room is currently in use')
+
             BookingUser.query.filter_by(
                 booking_id=booking.booking_id).delete()
             db.session.delete(booking)
@@ -199,4 +205,4 @@ def delete_booking(booking_id):
             raise NotFound('Booking not found')
     except IntegrityError as e:
         db.session.rollback()
-        raise InternalServerError('IntegrityError: Cannot delete the booking, it might be in use') from e
+        raise InternalServerError('Internal Server Error') from e
