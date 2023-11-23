@@ -86,7 +86,7 @@ def book_room():
     if not user_ids:
         raise BadRequest('No staff members have been added to the meeting yet')
 
-    if time_start == time_end or time_start > time_end:
+    if time_start >= time_end:
         raise BadRequest('Invalid time input. End time must be greater than start time.')
 
     if not (room_id and time_start and time_end and title and title.strip()):
