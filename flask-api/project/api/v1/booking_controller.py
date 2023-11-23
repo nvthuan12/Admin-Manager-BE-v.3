@@ -129,18 +129,21 @@ def update_booking(booking_id):
     time_end = data.get('time_end')
     user_ids = data.get('user_id')
 
-    if time_start is not None and time_end is not None and user_ids is not None:
+    if not user_ids:
+        raise BadRequest("At least one user must be selected")
 
+    if time_start is not None and time_end is not None and user_ids is not None:
         if time_end <= time_start:
             raise BadRequest('Invalid time input')
 
         existing_booking = Booking.query.filter(
             Booking.room_id == room_id,
             Booking.time_end >= time_start,
-            Booking.time_start <= time_end
+            Booking.time_start <= time_end,
+            Booking.booking_id != booking_id
         ).first()
 
-        if existing_booking and existing_booking.booking_id != booking_id:
+        if existing_booking:
             raise Conflict('Room is already booked for this time')
 
         try:
@@ -154,11 +157,7 @@ def update_booking(booking_id):
             booking.time_start = time_start
             booking.time_end = time_end
 
-            if not user_ids:
-                raise BadRequest('At least one user must be selected')
-
-            for user_booking in booking.booking_user:
-                db.session.delete(user_booking)
+            BookingUser.query.filter_by(booking_id=booking_id).delete()
 
             for user_id in user_ids:
                 user_booking = BookingUser(
@@ -168,9 +167,8 @@ def update_booking(booking_id):
             db.session.commit()
             return jsonify({'message': 'Booking updated successfully'})
         except Exception as e:
-            print(e)
             db.session.rollback()
-            raise InternalServerError('Internal Server Error') from e
+            raise InternalServerError() from e
     else:
         raise BadRequest('Invalid time input or missing user_id')
 
