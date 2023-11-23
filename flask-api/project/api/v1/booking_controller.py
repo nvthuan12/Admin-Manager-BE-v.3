@@ -94,41 +94,37 @@ def book_room():
     if not user_ids:
         raise BadRequest('No staff members have been added to the meeting yet')
 
-    if time_start == time_end:
-        raise BadRequest('Invalid time input')
-    
-    if time_start is not None and time_end is not None and time_start < time_end:
-        if room_id is not None and time_start and time_end:
-            existing_booking = Booking.query.filter(
-                Booking.room_id == room_id,
-                Booking.time_end >= time_start,
-                Booking.time_start <= time_end
-            ).first()
+    if time_start == time_end or time_start > time_end:
+        raise BadRequest('Invalid time input. End time must be greater than start time.')
 
-            if existing_booking:
-                raise Conflict('Room is already booked for this time')
+    if not (room_id and time_start and time_end and title and title.strip()):
+        raise BadRequest('Invalid or empty values')
 
-            try:
-                new_booking = Booking(
-                    room_id=room_id, title=title, time_start=time_start, time_end=time_end)
-                db.session.add(new_booking)
-                db.session.commit()
+    existing_booking = Booking.query.filter(
+        Booking.room_id == room_id,
+        Booking.time_end >= time_start,
+        Booking.time_start <= time_end
+    ).first()
 
-                for user_id in user_ids:
-                    user_booking = BookingUser(
-                        user_id=user_id, booking_id=new_booking.booking_id)
-                    db.session.add(user_booking)
+    if existing_booking:
+        raise Conflict('Room is already booked for this time')
 
-                db.session.commit()
-                return jsonify({'message': 'Booking created successfully'})
-            except Exception as e:
-                print(e)
-                db.session.rollback()
-                raise InternalServerError('Internal Server Error') from e
-        else:
-            raise BadRequest('Invalid or empty values for room name, time start, or time end')
-    else:
-        raise BadRequest('Invalid time input')
+    try:
+        new_booking = Booking(
+            room_id=room_id, title=title, time_start=time_start, time_end=time_end)
+        db.session.add(new_booking)
+        db.session.commit()
+
+        for user_id in user_ids:
+            user_booking = BookingUser(
+                user_id=user_id, booking_id=new_booking.booking_id)
+            db.session.add(user_booking)
+        db.session.commit()
+        return jsonify({'message': 'Booking created successfully'})
+    except Exception as e:
+        print(e)
+        db.session.rollback()
+        raise InternalServerError()
 
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["PUT"])
 @jwt_required()
