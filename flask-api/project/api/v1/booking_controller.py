@@ -182,19 +182,18 @@ def delete_booking(booking_id):
     try:
         booking = Booking.query.get(booking_id)
 
-        if booking:
-            room_status = Room.query.get(booking.room_id).status
-
-            if room_status:
-                raise BadRequest('Cannot delete the booking, the room is currently in use')
-
-            BookingUser.query.filter_by(
-                booking_id=booking.booking_id).delete()
-            db.session.delete(booking)
-            db.session.commit()
-            return jsonify({'message': 'Booking deleted successfully'})
-        else:
+        if not booking:
             raise NotFound('Booking not found')
-    except IntegrityError as e:
+
+        room_status = Room.query.filter_by(room_id=booking.room_id).value(Room.status)
+
+        if room_status:
+            raise BadRequest('Cannot delete the booking, the room is currently in use')
+
+        BookingUser.query.filter_by(booking_id=booking.booking_id).delete()
+        db.session.delete(booking)
+        db.session.commit()
+        return jsonify({'message': 'Booking deleted successfully'})
+    except IntegrityError:
         db.session.rollback()
-        raise InternalServerError('Internal Server Error') from e
+        raise InternalServerError()
