@@ -131,6 +131,9 @@ def update_booking(booking_id):
 
     if not user_ids:
         raise BadRequest("At least one user must be selected")
+    
+    if not (room_id and time_start and time_end and title and title.strip()):
+        raise BadRequest('Invalid or empty values')
 
     if time_start is not None and time_end is not None and user_ids is not None:
         if time_end <= time_start:
