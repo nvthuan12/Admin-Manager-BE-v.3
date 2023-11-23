@@ -98,32 +98,35 @@ def book_room():
         raise BadRequest('Invalid time input')
     
     if time_start is not None and time_end is not None and time_start < time_end:
-        existing_booking = Booking.query.filter(
-            Booking.room_id == room_id,
-            Booking.time_end >= time_start,
-            Booking.time_start <= time_end
-        ).first()
+        if room_id is not None and time_start and time_end:
+            existing_booking = Booking.query.filter(
+                Booking.room_id == room_id,
+                Booking.time_end >= time_start,
+                Booking.time_start <= time_end
+            ).first()
 
-        if existing_booking:
-            raise Conflict('Room is already booked for this time')
+            if existing_booking:
+                raise Conflict('Room is already booked for this time')
 
-        try:
-            new_booking = Booking(
-                room_id=room_id, title=title, time_start=time_start, time_end=time_end)
-            db.session.add(new_booking)
-            db.session.commit()
+            try:
+                new_booking = Booking(
+                    room_id=room_id, title=title, time_start=time_start, time_end=time_end)
+                db.session.add(new_booking)
+                db.session.commit()
 
-            for user_id in user_ids:
-                user_booking = BookingUser(
-                    user_id=user_id, booking_id=new_booking.booking_id)
-                db.session.add(user_booking)
+                for user_id in user_ids:
+                    user_booking = BookingUser(
+                        user_id=user_id, booking_id=new_booking.booking_id)
+                    db.session.add(user_booking)
 
-            db.session.commit()
-            return jsonify({'message': 'Booking created successfully'})
-        except Exception as e:
-            print(e)
-            db.session.rollback()
-            raise InternalServerError('Internal Server Error') from e
+                db.session.commit()
+                return jsonify({'message': 'Booking created successfully'})
+            except Exception as e:
+                print(e)
+                db.session.rollback()
+                raise InternalServerError('Internal Server Error') from e
+        else:
+            raise BadRequest('Invalid or empty values for room_id, time_start, or time_end')
     else:
         raise BadRequest('Invalid time input')
 

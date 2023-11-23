@@ -36,6 +36,7 @@ def get_rooms():
             ).all()
 
             room.status = bool(current_bookings)
+            db.session.commit()
         
         total_items = len(all_rooms)
         total_pages = ceil(total_items / per_page)
