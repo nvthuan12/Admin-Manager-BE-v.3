@@ -5,8 +5,9 @@ from werkzeug.exceptions import BadRequest
 class Room(db.Model):
     __tablename__ = "room"
     room_id = db.Column(db.Integer, primary_key=True)
-    room_name = db.Column(db.String(80), nullable=False)
-    status = db.Column(db.Boolean, nullable=False)
+    room_name = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    is_blocked = db.Column(db.Boolean, nullable=False)
     booking = db.relationship('Booking', backref='room')
 
     def serialize(self):

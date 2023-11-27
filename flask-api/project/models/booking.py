@@ -6,9 +6,11 @@ from datetime import datetime
 class Booking(db.Model):
     __tablename__ = "booking"
     booking_id = db.Column(db.Integer, primary_key=True)
-    title=  db.Column(db.String(80), nullable=False)
+    title=  db.Column(db.String(255), nullable=False)
     time_start = db.Column(db.TIMESTAMP, nullable=False)
     time_end = db.Column(db.TIMESTAMP, nullable=False)
+    is_accept= db.Column(db.Boolean, nullable=False)
+    is_deleted= db.Column(db.Boolean, nullable=False)
     room_id = db.Column(db.Integer, db.ForeignKey('room.room_id'))
     booking_user = db.relationship('BookingUser', backref='booking')
     
