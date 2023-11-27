@@ -9,6 +9,7 @@ from datetime import datetime
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
 from itertools import islice
 from math import ceil
+from sqlalchemy.orm import joinedload
 
 room_blueprint = Blueprint('room_controller', __name__)
 
@@ -20,34 +21,28 @@ def get_rooms():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
 
-        all_rooms = Room.query.all()
-
-        start = (page - 1) * per_page
-        end = start + per_page
-        paginated_rooms = list(islice(all_rooms, start, end))
-
-        current_time = datetime.now()
-
-        for room in paginated_rooms:
-            current_bookings = Booking.query.filter(
-                Booking.room_id == room.room_id,
-                Booking.time_start <= current_time,
-                Booking.time_end >= current_time
-            ).all()
-
-            room.status = bool(current_bookings)
-            db.session.commit()
-        
-        total_items = len(all_rooms)
-        total_pages = ceil(total_items / per_page)
+        query = Room.query.paginate(page=page, per_page=per_page, error_out=False)
+        paginated_rooms = query.items
 
         return jsonify({
             "rooms": [room.serialize() for room in paginated_rooms],
-            "total_items": total_items,
+            "total_items": query.total,
             "current_page": page,
             "per_page": per_page,
-            "total_pages": total_pages
+            "total_pages": ceil(query.total / per_page)
         })
+
+    except Exception as e:
+        print(e)
+        raise InternalServerError('Internal Server Error') from e
+    
+@room_blueprint.route("/rooms/<int:room_id>", methods=["GET"])
+@jwt_required()
+@has_permission("view")
+def get_room_detail(room_id):
+    try:
+        room = Room.query.get_or_404(room_id)
+        return jsonify(room.serialize())
 
     except Exception as e:
         raise InternalServerError('Internal Server Error') from e
