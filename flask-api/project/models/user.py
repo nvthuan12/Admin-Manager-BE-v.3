@@ -3,6 +3,7 @@ from project.models import db
 from flask_bcrypt import bcrypt
 from sqlalchemy.orm import validates  
 from werkzeug.exceptions import BadRequest  
+from werkzeug.wrappers import BaseResponse
 
 class User(db.Model):
     __tablename__ = "user"
@@ -10,9 +11,9 @@ class User(db.Model):
     user_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(50), unique=True, nullable=False)
     phone_number = db.Column(db.String(11), unique=True, nullable=False)
-    password = db.Column(db.String(50), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.TIMESTAMP, nullable=False)
-    updated_at = db.Column(db.TIMESTAMP(50), nullable=False)
+    updated_at = db.Column(db.TIMESTAMP, nullable=False)
     is_deleted= db.Column(db.Boolean, nullable=False)
     booking_user = db.relationship('BookingUser', backref='user')
     user_has_role = db.relationship('UserHasRole', backref='user')
@@ -47,7 +48,7 @@ class User(db.Model):
     
     @validates('email') 
     def validate_email(self, key, email):
-        if len(email) > 80:
+        if len(email) > 50:
             raise BadRequest("User name exceeds maximum length")
         if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             raise BadRequest("Invalid email format") 

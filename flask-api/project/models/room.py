@@ -27,7 +27,7 @@ class Room(db.Model):
 
     @validates('room_name')
     def validate_room_name(self, key, room_name):
-        if len(room_name) > 80:
+        if len(room_name) > 50:
             raise BadRequest("Room name exceeds maximum length")
         return room_name
 
