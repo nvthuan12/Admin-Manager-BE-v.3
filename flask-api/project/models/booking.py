@@ -9,7 +9,7 @@ class Booking(db.Model):
     title=  db.Column(db.String(255), nullable=False)
     time_start = db.Column(db.TIMESTAMP, nullable=False)
     time_end = db.Column(db.TIMESTAMP, nullable=False)
-    is_accept= db.Column(db.Boolean, nullable=False)
+    is_accepted= db.Column(db.Boolean, nullable=False)
     is_deleted= db.Column(db.Boolean, nullable=False)
     room_id = db.Column(db.Integer, db.ForeignKey('room.room_id'))
     booking_user = db.relationship('BookingUser', backref='booking')
@@ -33,6 +33,6 @@ class Booking(db.Model):
 
     @validates('title')
     def validate_title(self, key, title):
-        if len(title) > 80:
+        if len(title) > 255:
             raise BadRequest("Title exceeds maximum length.")
         return title
