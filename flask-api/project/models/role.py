@@ -5,7 +5,7 @@ from werkzeug.exceptions import BadRequest
 class Role(db.Model):
     __tablename__ = "role"
     role_id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(80), nullable=False)
+    role_name = db.Column(db.String(50), nullable=False)
     user_has_role = db.relationship('UserHasRole', backref='role')
 
     @validates('role_id')
@@ -18,6 +18,6 @@ class Role(db.Model):
 
     @validates('role_name')
     def validate_role_name(self, key, role_name):
-        if len(role_name) > 80:
+        if len(role_name) > 50:
             raise BadRequest("Role name  exceeds maximum lengt")
         return role_name
