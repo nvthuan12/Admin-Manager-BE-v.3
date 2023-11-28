@@ -10,6 +10,8 @@ from project.models.booking_user import BookingUser
 from flask_jwt_extended import jwt_required
 from collections import defaultdict
 from project.api.v1.has_permission import has_permission
+from project.services.user_service import UserService
+from project.api.common.base_response import BaseResponse
 
 user_blueprint = Blueprint('user', __name__)
 
@@ -17,69 +19,13 @@ user_blueprint = Blueprint('user', __name__)
 @jwt_required()
 @has_permission("view")
 def view_list_user():
-    page = int(request.args.get('page',1)) 
-    per_page = int(request.args.get('per_page',10)) 
-
-    users = User.query.join(UserHasRole).join(Role).join(RoleHasPermission).join(Permission).with_entities(
-        User.user_id,
-        User.user_name,
-        User.email,
-        User.phone_number,
-        UserHasRole.role_id,
-        Role.role_name,
-        RoleHasPermission.permission_id,
-        Permission.permission_name
-    ).all()
-
-    grouped_users = defaultdict(lambda: {
-        "user_id": None,
-        "user_name": None,
-        "email": None,
-        "phone_number": None,
-        "role_id": set(),
-        "role_name": set(),
-        "permission_id": set(),
-        "permission_name": set()
-    })
-
-    for user in users:
-        user_dict = user._asdict()
-        user_id = user_dict["user_id"]
-
-        grouped_users[user_id]["user_id"] = user_dict["user_id"]
-        grouped_users[user_id]["user_name"] = user_dict["user_name"]
-        grouped_users[user_id]["email"] = user_dict["email"]
-        grouped_users[user_id]["phone_number"] = user_dict["phone_number"]
-        grouped_users[user_id]["role_id"].add(user_dict["role_id"])
-        grouped_users[user_id]["role_name"].add(user_dict["role_name"])
-        grouped_users[user_id]["permission_id"].add(user_dict["permission_id"])
-        grouped_users[user_id]["permission_name"].add(user_dict["permission_name"])
-    
-        per_page = per_page
-        start = (page - 1) * per_page
-        end = start + per_page
-        paginated_users = list(grouped_users.values())[start:end]
-        total_pages = len(paginated_users) // per_page + 1
-        total_items = len(paginated_users)
-        
-    result = {
-        'total_pages':total_pages ,
-        'total_items': total_items,
-        'current_page': page,
-        "list_users": [
-        {
-            "user_id": user["user_id"],
-            "user_name": user["user_name"],
-            "email": user["email"],
-            "phone_number": user["phone_number"],
-            "role_id": list(user["role_id"]),
-            "role_name": list(user["role_name"]),
-            "permission_id": list(user["permission_id"]),
-            "permission_name": list(user["permission_name"])
-        }
-        for user in paginated_users
-    ]}
-    return jsonify(result)
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        result = UserService.get_paginated_users(page, per_page)
+        return BaseResponse.success(result)
+    except Exception as e:
+        return BaseResponse.error(e)
 
 @user_blueprint.route('/users', methods=['POST'])
 @jwt_required()
