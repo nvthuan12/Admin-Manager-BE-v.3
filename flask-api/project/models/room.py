@@ -1,20 +1,24 @@
 from project.models import db
 from sqlalchemy.orm import validates  
 from werkzeug.exceptions import BadRequest
+from marshmallow_sqlalchemy import ModelSchema
 
 class Room(db.Model):
     __tablename__ = "room"
     room_id = db.Column(db.Integer, primary_key=True)
     room_name = db.Column(db.String(50), nullable=False)
-    description = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.String(255), nullable=True)
     is_blocked = db.Column(db.Boolean, nullable=False)
     booking = db.relationship('Booking', backref='room')
+    deleted_at = db.Column(db.TIMESTAMP, nullable=True)
 
     def serialize(self):
         return {
             'room_id': self.room_id,
             'room_name': self.room_name,
-            'status': self.status,
+            'description': self.description,
+            'is_blocked': self.is_blocked,
+            'deleted_at': self.deleted_at
         }
 
     @validates('room_id')

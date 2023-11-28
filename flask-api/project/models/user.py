@@ -28,7 +28,12 @@ class User(db.Model):
             'user_id': self.user_id,
             'user_name': self.user_name,
             'email': self.email,
-            'phone_number': self.phone_number
+            'phone_number': self.phone_number,
+            'created_at': self.created_at.isoformat(),  # Chuyển đổi sang chuẩn ISO 8601 cho datetime
+            'updated_at': self.updated_at.isoformat(),
+            'is_deleted': self.is_deleted,
+            'bookings': [booking.serialize() for booking in self.booking_user],
+            'roles': [role.serialize() for role in self.user_has_role]
         }
     
     @validates('user_id')
