@@ -3,7 +3,6 @@ from project.models import db
 from flask_bcrypt import bcrypt
 from sqlalchemy.orm import validates  
 from werkzeug.exceptions import BadRequest  
-from werkzeug.wrappers import BaseResponse
 
 class User(db.Model):
     __tablename__ = "user"
