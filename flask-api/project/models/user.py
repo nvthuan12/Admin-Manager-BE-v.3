@@ -35,36 +35,45 @@ class User(db.Model):
             'bookings': [booking.serialize() for booking in self.booking_user],
             'roles': [role.serialize() for role in self.user_has_role]
         }
-    
-    @validates('user_id')
-    def validate_username(self, key, user_id):
-        try:
-            user_id = int(user_id) 
-        except BadRequest:
-            raise BadRequest("Invalid user_id format. Must be an integer.")
-        return user_id 
-    
-    @validates('user_name')
-    def validate_user_name(self, key, user_name):
-        if len(user_name) > 80:
-            raise BadRequest("User name exceeds maximum length")
-        return user_name
-    
-    @validates('email') 
-    def validate_email(self, key, email):
-        if len(email) > 50:
-            raise BadRequest("User name exceeds maximum length")
-        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-            raise BadRequest("Invalid email format") 
-        return email
-    
-    @validates('phone_number') 
-    def validate_phone_number(self, key, phone_number):
-        if len(phone_number) > 11:
-            raise BadRequest('Phone number exceeds maximum length')
-        if not re.match(r'^0\d{9}$' , phone_number):
-            raise BadRequest('Invalid phone number format') 
-        return phone_number
-    
 
+    @staticmethod
+    def validate_user_name(user_name):
+        if not user_name.strip():
+            return {"field": "user_name", "message":"User name cannot be empty or contain only whitespace"}
+        elif len(user_name) > 50:
+            return {"field": "user_name", "message":"User name exceeds maximum length"}
+        return None
+
+    @staticmethod
+    def validate_email(email):
+        if not email.strip():   
+            return {"field": "email", "message": "Email cannot be empty or contain only whitespace"}
+        elif not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            return {"field": "email","message": "Format email must be: example@example.com)"}
+        return None
+    @staticmethod
+    def validate_phone_number(phone_number):
+        if not phone_number.strip():
+            return {"field": "phone_number","message":"Phone number cannot be empty or contain only whitespace"}
+        elif not re.match(r'^0\d{9}$' , phone_number):
+            return {"field": "phone_number","message":"Phone number must be have 10 number and format: 0*********"}
+        return None
+
+    @staticmethod
+    def validate_password(password):
+        if not password.strip():
+            return {"field": "password","message":"Password cannot be empty or contain only whitespace"}
+        elif not re.match(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8,}$' , password):
+            return {"field": "password","message":"Password must be at least 8 characters, at least one letter and at least one number"}
+        return None
+
+    def validate_all_fields(self):
+        errors = []
+        errors.append(self.validate_user_name(self.user_name))
+        errors.append(self.validate_email(self.email))
+        errors.append(self.validate_phone_number(self.phone_number))
+        errors.append(self.validate_password(self.password))
+        
+        errors = [error for error in errors if error is not None]
+        return errors
     

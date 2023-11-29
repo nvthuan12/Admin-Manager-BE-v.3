@@ -28,16 +28,25 @@ class Booking(db.Model):
             'deleted_at': self.deleted_at
         }
     
-    @validates('booking_id')
-    def validate_username(self, key, booking_id):
-        try:
-            booking_id = int(booking_id) 
-        except BadRequest:
-            raise BadRequest("Invalid booking_id format. Must be an integer.")
-        return booking_id 
+    @staticmethod
+    def validate_title(title):
+        if not title.strip():
+            return {"field": "title", "message":"Title cannot be empty or contain only whitespace"}
+        elif len(title) > 255:
+            return {"field": "title", "message":"Title exceeds maximum length"}
+        return None
 
-    @validates('title')
-    def validate_title(self, key, title):
-        if len(title) > 255:
-            raise BadRequest("Title exceeds maximum length.")
-        return title
+    @staticmethod
+    def validate_time(time_start, time_end):
+        # Validation to ensure time_start is before time_end
+        if time_start >= time_end:
+            return {"field": "time_end", "message": "Time end must be after time start"}
+        return None
+   
+    def validate_all_fields(self):
+        errors = []
+        errors.append(self.validate_title(self.title))
+        errors.append(self.validate_time(self.time_start,self.time_end))
+
+        errors = [error for error in errors if error is not None]
+        return errors
