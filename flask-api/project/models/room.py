@@ -1,7 +1,6 @@
 from project.models import db
 from sqlalchemy.orm import validates  
 from werkzeug.exceptions import BadRequest
-from marshmallow_sqlalchemy import ModelSchema
 
 class Room(db.Model):
     __tablename__ = "room"
@@ -21,22 +20,26 @@ class Room(db.Model):
             'deleted_at': self.deleted_at
         }
 
-    @validates('room_id')
-    def validate_username(self, key, room_id):
-        try:
-            room_id = int(room_id) 
-        except BadRequest:
-            raise BadRequest("Invalid room_id format. Must be an integer.")
-        return room_id     
+    @staticmethod
+    def validate_room_name(room_name):
+        if not room_name.strip():
+            return {"field": "room_name", "message": "Room name cannot be empty or contain only whitespace"}
+        elif len(room_name) > 50:
+            return {"field": "room_name", "message": "Room name exceeds maximum length"}
+        return None
 
-    @validates('room_name')
-    def validate_room_name(self, key, room_name):
-        if len(room_name) > 50:
-            raise BadRequest("Room name exceeds maximum length")
-        return room_name
+    @staticmethod
+    def validate_description(description):
+        if not description.strip():
+            return {"field": "description", "message": "Description cannot be empty or contain only whitespace"}
+        elif len(description) > 255:
+            return {"field": "description", "message": "Description exceeds maximum length (255 characters)"}
+        return None
+    
+    def validate_all_fields(self):
+        errors = []
+        errors.append(self.validate_room_name(self.room_name))
+        errors.append(self.validate_description(self.description))
 
-    @validates('status')
-    def validate_status(self, key, status):
-        if status not in [True, False]:
-            raise BadRequest("Invalid status value, must be True or False")
-        return status
+        errors = [error for error in errors if error is not None]
+        return errors

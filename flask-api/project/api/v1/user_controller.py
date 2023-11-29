@@ -12,6 +12,7 @@ from collections import defaultdict
 from project.api.v1.has_permission import has_permission
 from project.services.user_service import UserService
 from project.api.common.base_response import BaseResponse
+from datetime import datetime
 
 user_blueprint = Blueprint('user', __name__)
 
@@ -37,10 +38,19 @@ def create_user():
     phone_number = data.get('phone_number')
     password = data.get('password')
     role_ids= data.get('role_id')
-
-    if not user_name or not email or not phone_number or not password or not role_ids:
-        raise BadRequest("Missing required fields")
-
+    new_user = User(
+        user_name=user_name,
+        email=email,
+        phone_number=phone_number,
+        password=password,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+        is_deleted=False
+    )
+    validate_error=new_user.validate_all_fields()
+ 
+    if validate_error:
+        return jsonify({"errors": validate_error})
     existing_email = User.query.filter_by(email=email).first()
     if existing_email:
         raise Conflict("Email already exists")
@@ -49,21 +59,17 @@ def create_user():
     if existing_phone:
        raise Conflict("Phone number already exists")
 
-    try:
-        new_user = User(user_name=user_name, email=email,
-                        phone_number=phone_number, password=password)
-        new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
+    
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
 
-        for role_id in role_ids:
-            new_user_role = UserHasRole(user_id=new_user.user_id, role_id=role_id)
-            db.session.add(new_user_role)
-            db.session.commit()
-        return jsonify({'message': 'Created user successfully'}),200
-    except Exception as e:
-        db.session.rollback()
-        raise  InternalServerError() from e
+    for role_id in role_ids:
+        new_user_role = UserHasRole(user_id=new_user.user_id, role_id=role_id)
+        db.session.add(new_user_role)
+        db.session.commit()
+    return BaseResponse.success("create success!")
+ 
 
 @user_blueprint.route('/users/<int:user_id>', methods=['PUT'])
 @jwt_required()
