@@ -1,7 +1,6 @@
 from project.models import db
 from sqlalchemy.orm import validates  
 from werkzeug.exceptions import BadRequest
-from marshmallow_sqlalchemy import ModelSchema
 
 class Room(db.Model):
     __tablename__ = "room"
@@ -9,8 +8,8 @@ class Room(db.Model):
     room_name = db.Column(db.String(50), nullable=False)
     description = db.Column(db.String(255), nullable=True)
     is_blocked = db.Column(db.Boolean, nullable=False)
-    booking = db.relationship('Booking', backref='room')
     deleted_at = db.Column(db.TIMESTAMP, nullable=True)
+    booking = db.relationship('Booking', backref='room')
 
     def serialize(self):
         return {
@@ -22,21 +21,29 @@ class Room(db.Model):
         }
 
     @validates('room_id')
-    def validate_username(self, key, room_id):
+    def validate_room_id(self, key, room_id):
         try:
-            room_id = int(room_id) 
-        except BadRequest:
+            room_id = int(room_id)
+        except ValueError:
             raise BadRequest("Invalid room_id format. Must be an integer.")
         return room_id     
 
     @validates('room_name')
     def validate_room_name(self, key, room_name):
+        if not room_name or room_name.isspace():
+            raise BadRequest("Room name cannot be empty.")
         if len(room_name) > 50:
             raise BadRequest("Room name exceeds maximum length")
         return room_name
 
-    @validates('status')
-    def validate_status(self, key, status):
-        if status not in [True, False]:
-            raise BadRequest("Invalid status value, must be True or False")
-        return status
+    @validates('description')
+    def validate_description(self, key, description):
+        if description is None or description.isspace():
+            raise BadRequest("Description is required.")
+        return description
+
+    @validates('is_blocked')
+    def validate_is_blocked(self, key, is_blocked):
+        if is_blocked not in [True, False]:
+            raise BadRequest("Invalid is_blocked value, must be True or False")
+        return is_blocked
