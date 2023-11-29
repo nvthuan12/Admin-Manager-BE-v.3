@@ -8,8 +8,8 @@ class Room(db.Model):
     room_name = db.Column(db.String(50), nullable=False)
     description = db.Column(db.String(255), nullable=True)
     is_blocked = db.Column(db.Boolean, nullable=False)
-    booking = db.relationship('Booking', backref='room')
     deleted_at = db.Column(db.TIMESTAMP, nullable=True)
+    booking = db.relationship('Booking', backref='room')
 
     def serialize(self):
         return {
@@ -19,7 +19,6 @@ class Room(db.Model):
             'is_blocked': self.is_blocked,
             'deleted_at': self.deleted_at
         }
-
     @staticmethod
     def validate_room_name(room_name):
         if not room_name.strip():
