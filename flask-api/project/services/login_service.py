@@ -16,6 +16,12 @@ class AuthService:
     def login_user(user):
         access_token = create_access_token(identity=user.user_id, expires_delta=timedelta(days=1))
         role_name = get_role_names(user.user_id)
-        data= access_token=access_token
+        user_name=user.user_name
+        access_token=access_token
+        data = [
+            {"token": access_token},
+            {"role_name": role_name},
+            {"user_name": user_name}
+        ]
         return data
     

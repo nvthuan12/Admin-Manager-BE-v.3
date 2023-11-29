@@ -19,31 +19,26 @@ class Room(db.Model):
             'is_blocked': self.is_blocked,
             'deleted_at': self.deleted_at
         }
+    @staticmethod
+    def validate_room_name(room_name):
+        if not room_name.strip():
+            return {"field": "room_name", "message": "Room name cannot be empty or contain only whitespace"}
+        elif len(room_name) > 50:
+            return {"field": "room_name", "message": "Room name exceeds maximum length"}
+        return None
 
-    @validates('room_id')
-    def validate_room_id(self, key, room_id):
-        try:
-            room_id = int(room_id)
-        except ValueError:
-            raise BadRequest("Invalid room_id format. Must be an integer.")
-        return room_id     
+    @staticmethod
+    def validate_description(description):
+        if not description.strip():
+            return {"field": "description", "message": "Description cannot be empty or contain only whitespace"}
+        elif len(description) > 255:
+            return {"field": "description", "message": "Description exceeds maximum length (255 characters)"}
+        return None
+    
+    def validate_all_fields(self):
+        errors = []
+        errors.append(self.validate_room_name(self.room_name))
+        errors.append(self.validate_description(self.description))
 
-    @validates('room_name')
-    def validate_room_name(self, key, room_name):
-        if not room_name or room_name.isspace():
-            raise BadRequest("Room name cannot be empty.")
-        if len(room_name) > 50:
-            raise BadRequest("Room name exceeds maximum length")
-        return room_name
-
-    @validates('description')
-    def validate_description(self, key, description):
-        if description is None or description.isspace():
-            raise BadRequest("Description is required.")
-        return description
-
-    @validates('is_blocked')
-    def validate_is_blocked(self, key, is_blocked):
-        if is_blocked not in [True, False]:
-            raise BadRequest("Invalid is_blocked value, must be True or False")
-        return is_blocked
+        errors = [error for error in errors if error is not None]
+        return errors
