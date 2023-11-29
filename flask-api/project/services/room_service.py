@@ -4,7 +4,6 @@ from project.models import Room
 from werkzeug.exceptions import Conflict, BadRequest, NotFound
 from typing import Optional
 
-
 class RoomService:
     @staticmethod
     def get_paginated_rooms(page, per_page):

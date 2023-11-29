@@ -6,7 +6,6 @@ from itertools import islice
 from sqlalchemy import or_
 from typing import Optional
 
-
 class RoomExecutor:
     @staticmethod
     def get_paginated_rooms(page, per_page):

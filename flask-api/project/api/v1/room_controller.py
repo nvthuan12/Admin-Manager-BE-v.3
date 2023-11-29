@@ -24,6 +24,7 @@ def get_rooms():
     except InternalServerError as e:
         return BaseResponse.error(e)
     
+    
 @room_blueprint.route("/rooms/<int:room_id>", methods=["GET"])
 @jwt_required()
 @has_permission("view")
