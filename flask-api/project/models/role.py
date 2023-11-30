@@ -7,6 +7,7 @@ class Role(db.Model):
     role_id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(50), nullable=False)
     user_has_role = db.relationship('UserHasRole', backref='role')
+    role_has_permission = db.relationship('RoleHasPermission', backref='role')
 
     @validates('role_id')
     def validate_username(self, key, role_id):

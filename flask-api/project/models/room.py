@@ -21,19 +21,19 @@ class Room(db.Model):
         }
 
     @staticmethod
-    def validate_room_name(room_name):
+    def validate_room_name(room_name: str) -> dict[str,str] | None:
         if not room_name.strip():
-            return {"field": "room_name", "message": "Room name cannot be empty or contain only whitespace"}
+            return {"field": "room_name", "error": "Room name cannot be empty or contain only whitespace"}
         elif len(room_name) > 50:
-            return {"field": "room_name", "message": "Room name exceeds maximum length"}
+            return {"field": "room_name", "error": "Room name exceeds maximum length"}
         return None
 
     @staticmethod
-    def validate_description(description):
+    def validate_description(description: str) -> dict[str,str] | None:
         if not description.strip():
-            return {"field": "description", "message": "Description cannot be empty or contain only whitespace"}
+            return {"field": "description", "error": "Description cannot be empty or contain only whitespace"}
         elif len(description) > 255:
-            return {"field": "description", "message": "Description exceeds maximum length (255 characters)"}
+            return {"field": "description", "error": "Description exceeds maximum length (255 characters)"}
         return None
     
     def validate_all_fields(self):
