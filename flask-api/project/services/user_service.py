@@ -88,7 +88,7 @@ class UserService:
                 user_id=new_user.user_id, role_id=role_id)
             db.session.add(new_user_role)
             db.session.commit()
-        return BaseResponse.success("User created successfully")
+        return BaseResponse.success(message="User created successfully")
 
     @staticmethod
     def update_user(data: Dict, user_id: int):
@@ -124,7 +124,8 @@ class UserService:
             new_user_role = UserHasRole(user_id=user_id, role_id=role_id)
             db.session.add(new_user_role)
         db.session.commit()
-        return BaseResponse.success("Updated user successfully")
+        # return {"message": "Updated user successfully"}
+        return BaseResponse.success(message= "Updated user successfully")
 
     @staticmethod
     def delete_user(user_id: int):
@@ -134,7 +135,7 @@ class UserService:
         user.is_deleted = True
         user.updated_at = datetime.now()
         db.session.commit()
-        return BaseResponse.success("Deleted success!")
+        return BaseResponse.success(message="Deleted success!")
 
     @staticmethod
     def search_list_user(page: int, per_page: int, search: str):
@@ -156,3 +157,20 @@ class UserService:
             'total_pages': total_pages
         }
         return BaseResponse.success(result)
+    
+    @staticmethod
+    def detail_user(user_id: int):
+        user=UserExecutor.get_user(user_id)
+        if user is None:
+            raise NotFound("No data found")
+        role_names = [user_role.role.role_name for user_role in user.user_has_role]
+        user_info = {
+            "user_id": user.user_id,
+            "user_name": user.user_name,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "created_at": user.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": user.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "role_name": role_names
+        }
+        return user_info
