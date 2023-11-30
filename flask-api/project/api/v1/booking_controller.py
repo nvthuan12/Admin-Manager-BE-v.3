@@ -12,6 +12,10 @@ from itertools import islice
 from math import ceil
 from collections import defaultdict
 from sqlalchemy import extract
+from datetime import datetime, timedelta
+from project.api.common.base_response import BaseResponse
+from dateutil.relativedelta import relativedelta
+
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
@@ -21,89 +25,43 @@ booking_blueprint = Blueprint('booking_controller', __name__)
 @has_permission("view")
 def get_bookings():
     try:
-        month = request.args.get('month', type=int)
-        year = request.args.get('year', type=int)
+        start_date_str = request.args.get('start_date', None)
+        end_date_str = request.args.get('end_date', None)
 
-        week_in_month = request.args.get('week_in_month', type=int)
-
-        if month is None or year is None:
-            raise BadRequest("Month and year are required parameters.")
+        if start_date_str and end_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1)
+        else:
+            return BadRequest("Both start_date and end_date are required for date range query.")
 
         bookings = Booking.query.filter(
-            extract('month', Booking.time_start) == month,
-            extract('year', Booking.time_start) == year
-        ).join(Room).join(BookingUser).join(User).with_entities(
-            Booking.booking_id,
-            Booking.room_id,
-            Booking.title,
-            Booking.time_start,
-            Booking.time_end,
-            Booking.is_accepted,
-            Room.room_name,
-            Room.is_blocked,
-            BookingUser.user_id,
-            BookingUser.is_attending,
-            User.user_name
+            Booking.is_deleted == False,
+            Booking.time_end.between(start_date, end_date)
         ).all()
 
-        grouped_bookings = defaultdict(lambda: {
-            "booking_id": None,
-            "room_id": None,
-            "title": None,
-            "time_start": None,
-            "time_end": None,
-            "is_accepted": None,
-            "room_name": None,
-            "is_blocked": None,
-            "user_id": [],
-            "is_attending": None,
-            "user_name": [] 
-        })
-
+        list_bookings = []
         for booking in bookings:
-            if week_in_month is not None:
-                if extract('week', booking.time_start) == week_in_month:
-                    process_booking(booking, grouped_bookings)
-            else:
-                process_booking(booking, grouped_bookings)
+            user_names = [
+                booking_user.user.user_name for booking_user in booking.booking_user]
+            room = Room.query.filter_by(room_id=booking.room_id).first()
+            room_name = room.room_name if room else None
+            booking_info = {
+                "booking_id": booking.booking_id,
+                "title": booking.title,
+                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+                "room_name": room_name,
+                "user_name": user_names
+            }
+            list_bookings.append(booking_info)
 
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
-        start = (page - 1) * per_page
-        end = start + per_page
-
-        paginated_grouped_bookings = list(
-            islice(grouped_bookings.values(), start, end))
-
-        total_items = len(grouped_bookings)
-        total_pages = ceil(total_items / per_page)
-
-        result = {
-            "bookings": paginated_grouped_bookings,
-            "total_items": total_items,
-            "current_page": page,
-            "per_page": per_page,
-            "total_pages": total_pages
-        }
+        return BaseResponse.success(list_bookings)
     except BadRequest as bad_request:
         raise bad_request
     except Exception as e:
         raise InternalServerError("Internal Server Error")
 
-def process_booking(booking, grouped_bookings):
-    booking_id = booking.booking_id
-    grouped_bookings[booking_id]["booking_id"] = booking_id
-    grouped_bookings[booking_id]["user_id"].append(booking.user_id)
-    grouped_bookings[booking_id]["user_name"].append(booking.user_name)
-    grouped_bookings[booking_id]["room_id"] = booking.room_id
-    grouped_bookings[booking_id]["room_name"] = booking.room_name
-    grouped_bookings[booking_id]["title"] = booking.title
-    grouped_bookings[booking_id]["time_end"] = booking.time_end.strftime('%Y-%m-%d %H:%M:%S')
-    grouped_bookings[booking_id]["time_start"] = booking.time_start.strftime('%Y-%m-%d %H:%M:%S')
-    grouped_bookings[booking_id]["is_accepted"] = booking.is_accepted
-    grouped_bookings[booking_id]["is_blocked"] = booking.is_blocked
-    grouped_bookings[booking_id]["is_attending"] = booking.is_attending
-    print("Attributes for booking object:", dir(booking))
+
 
 
 @booking_blueprint.route("/bookings", methods=["POST"])
@@ -126,6 +84,9 @@ def book_room():
 
     if not (room_id and time_start and time_end and title and title.strip()):
         raise BadRequest('Invalid or empty values')
+    
+    # if datetime.strptime(time_start, '%Y-%m-%d %H:%M:%S') < datetime.now():
+    #     raise BadRequest('Cannot book a room for the past')
 
     existing_booking = Booking.query.filter(
         Booking.room_id == room_id,
@@ -138,13 +99,13 @@ def book_room():
 
     try:
         new_booking = Booking(
-            room_id=room_id, title=title, time_start=time_start, time_end=time_end)
+            room_id=room_id, title=title, time_start=time_start, time_end=time_end, is_accepted=True, is_deleted=False)
         db.session.add(new_booking)
         db.session.commit()
 
         for user_id in user_ids:
             user_booking = BookingUser(
-                user_id=user_id, booking_id=new_booking.booking_id)
+                user_id=user_id, booking_id=new_booking.booking_id, is_attending=False)
             db.session.add(user_booking)
         db.session.commit()
         return jsonify({'message': 'Booking created successfully'})
