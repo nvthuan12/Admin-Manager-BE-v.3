@@ -1,27 +1,30 @@
-from project.database.excute.user import get_user_by_email
+from project.database.excute.user import UserExecutor
 from datetime import timedelta
+from werkzeug.exceptions import BadRequest, Unauthorized
 from flask import jsonify
 from flask_jwt_extended import create_access_token
-from project.api.v1.has_permission import get_role_names  
+
 
 class AuthService:
     @staticmethod
-    def authenticate_user(email, password):
-        user = get_user_by_email(email)
+    def authenticate_user(email: str, password: str):
+        if not email or not password:
+            raise BadRequest('Email and password are required.')
+        user = UserExecutor.get_user_by_email(email)
         if not user or not user.check_password(password):
-            return None
+            raise Unauthorized('Invalid email or password.')
         return user
 
     @staticmethod
-    def login_user(user):
-        access_token = create_access_token(identity=user.user_id, expires_delta=timedelta(days=1))
-        role_name = get_role_names(user.user_id)
-        user_name=user.user_name
-        access_token=access_token
+    def login_user(user: object):
+        access_token = create_access_token(
+            identity=user.user_id, expires_delta=timedelta(days=1))
+        role_name = UserExecutor.get_role_names(user.user_id)
+        user_name = user.user_name
+        access_token = access_token
         data = [
             {"token": access_token},
             {"role_name": role_name},
             {"user_name": user_name}
         ]
         return data
-    

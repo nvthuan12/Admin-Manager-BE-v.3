@@ -1,8 +1,9 @@
 import re
 from project.models import db
 from flask_bcrypt import bcrypt
-from sqlalchemy.orm import validates  
-from werkzeug.exceptions import BadRequest  
+from sqlalchemy.orm import validates
+from werkzeug.exceptions import BadRequest
+
 
 class User(db.Model):
     __tablename__ = "user"
@@ -13,12 +14,13 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.TIMESTAMP, nullable=False)
     updated_at = db.Column(db.TIMESTAMP, nullable=False)
-    is_deleted= db.Column(db.Boolean, nullable=False)
+    is_deleted = db.Column(db.Boolean, nullable=False)
     booking_user = db.relationship('BookingUser', backref='user')
     user_has_role = db.relationship('UserHasRole', backref='user')
-    
+
     def set_password(self, password):
-        self.password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        self.password = bcrypt.hashpw(password.encode(
+            'utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     def check_password(self, password):
         return bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
@@ -29,7 +31,8 @@ class User(db.Model):
             'user_name': self.user_name,
             'email': self.email,
             'phone_number': self.phone_number,
-            'created_at': self.created_at.isoformat(),  # Chuyển đổi sang chuẩn ISO 8601 cho datetime
+            # Chuyển đổi sang chuẩn ISO 8601 cho datetime
+            'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted,
             'bookings': [booking.serialize() for booking in self.booking_user],
@@ -37,34 +40,35 @@ class User(db.Model):
         }
 
     @staticmethod
-    def validate_user_name(user_name):
+    def validate_user_name(user_name: str) -> dict[str, str] | None:
         if not user_name.strip():
-            return {"field": "user_name", "message":"User name cannot be empty or contain only whitespace"}
+            return {"field": "user_name", "error": "User name cannot be empty or contain only whitespace"}
         elif len(user_name) > 50:
-            return {"field": "user_name", "message":"User name exceeds maximum length"}
+            return {"field": "user_name", "error": "User name exceeds maximum length"}
         return None
 
     @staticmethod
-    def validate_email(email):
-        if not email.strip():   
-            return {"field": "email", "message": "Email cannot be empty or contain only whitespace"}
+    def validate_email(email: str) -> dict[str,str] | None:
+        if not email.strip():
+            return {"field": "email", "error": "Email cannot be empty or contain only whitespace"}
         elif not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-            return {"field": "email","message": "Format email must be: example@example.com)"}
-        return None
-    @staticmethod
-    def validate_phone_number(phone_number):
-        if not phone_number.strip():
-            return {"field": "phone_number","message":"Phone number cannot be empty or contain only whitespace"}
-        elif not re.match(r'^0\d{9}$' , phone_number):
-            return {"field": "phone_number","message":"Phone number must be have 10 number and format: 0*********"}
+            return {"field": "email", "error": "Format email must be: example@example.com)"}
         return None
 
     @staticmethod
-    def validate_password(password):
+    def validate_phone_number(phone_number: str) -> dict[str,str] | None:
+        if not phone_number.strip():
+            return {"field": "phone_number", "error": "Phone number cannot be empty or contain only whitespace"}
+        elif not re.match(r'^0\d{9}$', phone_number):
+            return {"field": "phone_number", "error": "Phone number must be have 10 number and format: 0*********"}
+        return None
+
+    @staticmethod
+    def validate_password(password: str) -> dict[str,str] | None:
         if not password.strip():
-            return {"field": "password","message":"Password cannot be empty or contain only whitespace"}
-        elif not re.match(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8,}$' , password):
-            return {"field": "password","message":"Password must be at least 8 characters, at least one letter and at least one number"}
+            return {"field": "password", "error": "Password cannot be empty or contain only whitespace"}
+        elif not re.match(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{8,}$', password):
+            return {"field": "password", "error": "Password must be at least 8 characters, at least one letter and at least one number"}
         return None
 
     def validate_all_fields(self):
@@ -73,7 +77,6 @@ class User(db.Model):
         errors.append(self.validate_email(self.email))
         errors.append(self.validate_phone_number(self.phone_number))
         errors.append(self.validate_password(self.password))
-        
+
         errors = [error for error in errors if error is not None]
         return errors
-    
