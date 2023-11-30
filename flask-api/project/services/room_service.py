@@ -1,8 +1,8 @@
 from project.database.excute.room import RoomExecutor
 from math import ceil
-from project.models import Room
-from werkzeug.exceptions import Conflict, BadRequest, NotFound
-from typing import Optional
+from project.models import Room, Booking
+from werkzeug.exceptions import Conflict, BadRequest, NotFound, InternalServerError
+from typing import Optional, Dict, List
 
 class RoomService:
     @staticmethod
@@ -22,20 +22,26 @@ class RoomService:
         return RoomExecutor.get_room_detail(room_id)
     
     @staticmethod
-    def create_room(data):
-        room_name = data.get("room_name")
-        is_blocked = data.get("is_blocked", False)
-        description = data.get("description")
+    def get_room_detail(room_id: int) -> Optional[Room]:
+        return RoomExecutor.get_room_detail(room_id)
 
-        existing_room = RoomExecutor.get_room_by_name(room_name)
+    @staticmethod
+    def create_room(data: Dict) -> Dict:
+        room_name: str = data.get("room_name")
+        is_blocked: Optional[bool] = data.get("is_blocked", False)
+        description: Optional[str] = data.get("description")
+
+        existing_room: Optional[Room] = RoomExecutor.get_room_by_name(room_name)
         if existing_room:
             raise Conflict("Room already exists")
 
         new_room = Room(room_name=room_name, description=description, is_blocked=is_blocked)
         RoomExecutor.add_room(new_room)
 
+        return {"message": "Room created successfully"}
+
     @staticmethod
-    def update_room(room_id, data):
+    def update_room(room_id: int, data: Dict) -> None:
         room_name = data.get("room_name")
 
         existing_room = RoomExecutor.get_room_by_name(room_name)
@@ -51,25 +57,29 @@ class RoomService:
         RoomExecutor.commit()
 
     @staticmethod
-    def delete_room(room_id, data):
-        room_to_delete = RoomExecutor.get_room_by_id(room_id)
+    def delete_room(room_id: int, data: Optional[Dict]) -> Dict:
+        try:
+            room_to_delete: Room = RoomExecutor.get_room_by_id(room_id)
 
-        if not room_to_delete:
-            raise NotFound("Room not found")
+            if not room_to_delete:
+                raise NotFound("Room not found")
 
-        if room_to_delete.is_blocked:
-            raise BadRequest("Cannot block locked rooms")
+            if room_to_delete.is_blocked:
+                raise BadRequest("Cannot block locked rooms")
 
-        description = data.get("description")
+            description: Optional[str] = data.get("description") if data else None
 
-        bookings_to_delete = RoomExecutor.get_bookings_by_room_id(room_id)
+            bookings_to_delete: List[Booking] = RoomExecutor.get_bookings_by_room_id(room_id)
 
-        RoomExecutor.soft_delete_room_and_bookings(room_to_delete, bookings_to_delete, description)
+            RoomExecutor.soft_delete_room_and_bookings(room_to_delete, bookings_to_delete, description)
 
-        return {"message": "Room and associated bookings blocked successfully"}
+            return {"message": "Room and associated bookings blocked successfully"}
+
+        except Exception as e:
+            raise InternalServerError(e)
     
     @staticmethod
-    def open_room(room_id, data):
+    def open_room(room_id: int, data: Dict) -> Dict:
         room_to_open = RoomExecutor.get_room_by_id(room_id)
 
         if not room_to_open:
@@ -87,7 +97,7 @@ class RoomService:
         return {"message": "Room and associated bookings opened successfully"}
 
     @staticmethod
-    def get_status_rooms(page, per_page):
+    def get_status_rooms(page: int, per_page: int):
         paginated_rooms, total_items, total_pages = RoomExecutor.get_rooms_with_status(page, per_page)
 
         return {
@@ -100,7 +110,7 @@ class RoomService:
         
 
     @staticmethod
-    def search_rooms(page, per_page, search_name):
+    def search_rooms(page: int, per_page: int, search_name: Optional[str]) -> Dict[str, int]:
         paginated_rooms, total_items, total_pages = RoomExecutor.search_rooms_in_db(page, per_page, search_name)
 
         return {
@@ -110,5 +120,5 @@ class RoomService:
             "per_page": per_page,
             "total_pages": total_pages
         }
-    
+        
     

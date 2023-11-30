@@ -4,7 +4,7 @@ from project.api.v1.has_permission import has_permission
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
 from project.api.common.base_response import BaseResponse
 from project.services.room_service import RoomService
-from typing import Optional
+from typing import Optional, Dict
 
 
 room_blueprint = Blueprint('room_controller', __name__)
@@ -41,11 +41,11 @@ def get_room_detail(room_id: int) -> BaseResponse:
 @room_blueprint.route("/rooms", methods=["POST"])
 @jwt_required()
 @has_permission("create")
-def create_room():
+def create_room() -> BaseResponse:
     try:
-        data = request.get_json()
-        RoomService.create_room(data)
-        return BaseResponse.success({"message": "Room created successfully"})
+        data: Dict = request.get_json()
+        response_data = RoomService.create_room(data)
+        return BaseResponse.success(response_data)
 
     except BadRequest as e:
         return BaseResponse.error(e)
@@ -56,9 +56,9 @@ def create_room():
 @room_blueprint.route("/rooms/<int:room_id>", methods=["PUT"])
 @jwt_required()
 @has_permission("update")
-def update_room(room_id):
+def update_room(room_id: int):
     try:
-        data = request.get_json()
+        data: Dict = request.get_json()
         RoomService.update_room(room_id, data)
         return BaseResponse.success({"message": "Room updated successfully"})
 
@@ -71,25 +71,25 @@ def update_room(room_id):
 @room_blueprint.route("/rooms/<int:room_id>/blocked", methods=["PUT"])
 @jwt_required()
 @has_permission("update")
-def delete_room(room_id):
+def delete_room(room_id: int) -> BaseResponse:
     try:
-        data = request.get_json()
-        response_data = RoomService.delete_room(room_id, data)
+        data: Dict = request.get_json()
+        response_data: Dict = RoomService.delete_room(room_id, data)
         return BaseResponse.success(response_data)
 
     except NotFound as e:
         return BaseResponse.error(e)
-    
+
     except BadRequest as e:
         return BaseResponse.error(e)
-    
+
     except InternalServerError as e:
         return BaseResponse.error(e)
 
 @room_blueprint.route("/rooms/<int:room_id>/opened", methods=["PUT"])
 @jwt_required()
 @has_permission("update")
-def open_room(room_id):
+def open_room(room_id: int):
     try:
         data = request.get_json()
         response_data = RoomService.open_room(room_id, data)
@@ -103,29 +103,30 @@ def open_room(room_id):
 
     except InternalServerError as e:
         return BaseResponse.error(e)
+
     
 @room_blueprint.route("/status_rooms", methods=["GET"])
 @jwt_required()
 @has_permission("view")
 def get_status_rooms_endpoint():
     try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
+        page: int = request.args.get('page', 1, type=int)
+        per_page: int = request.args.get('per_page', 10, type=int)
 
         response_data = RoomService.get_status_rooms(page, per_page)
         return BaseResponse.success(response_data)
 
     except InternalServerError as e:
-        return BaseResponse.error(str(e))
+        return BaseResponse.error(e)
     
 @room_blueprint.route("/rooms/search", methods=["GET"])
 @jwt_required()
 @has_permission("view")
 def search_rooms_endpoint():
     try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
-        search_name = request.args.get('name', '')
+        page: int = request.args.get('page', 1, type=int)
+        per_page: int = request.args.get('per_page', 10, type=int)
+        search_name: str = request.args.get('name', '')
 
         response_data = RoomService.search_rooms(page, per_page, search_name)
         return BaseResponse.success(response_data)
