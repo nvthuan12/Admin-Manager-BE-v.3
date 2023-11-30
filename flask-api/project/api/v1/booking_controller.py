@@ -8,13 +8,9 @@ from flask_jwt_extended import JWTManager, jwt_required
 from project.api.v1.has_permission import has_permission
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
-from itertools import islice
-from math import ceil
-from collections import defaultdict
-from sqlalchemy import extract
-from datetime import datetime, timedelta
 from project.api.common.base_response import BaseResponse
-from dateutil.relativedelta import relativedelta
+from project.services.booking_service import BookingService
+
 
 
 booking_blueprint = Blueprint('booking_controller', __name__)
@@ -23,45 +19,15 @@ booking_blueprint = Blueprint('booking_controller', __name__)
 @booking_blueprint.route("/bookings", methods=["GET"])
 @jwt_required()
 @has_permission("view")
-def get_bookings():
+def get_bookings() -> dict:
     try:
-        start_date_str = request.args.get('start_date', None)
-        end_date_str = request.args.get('end_date', None)
+        response_data: dict = BookingService.get_bookings_in_date_range()
+        return BaseResponse.success(response_data)
 
-        if start_date_str and end_date_str:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1)
-        else:
-            return BadRequest("Both start_date and end_date are required for date range query.")
-
-        bookings = Booking.query.filter(
-            Booking.is_deleted == False,
-            Booking.time_end.between(start_date, end_date)
-        ).all()
-
-        list_bookings = []
-        for booking in bookings:
-            user_names = [
-                booking_user.user.user_name for booking_user in booking.booking_user]
-            room = Room.query.filter_by(room_id=booking.room_id).first()
-            room_name = room.room_name if room else None
-            booking_info = {
-                "booking_id": booking.booking_id,
-                "title": booking.title,
-                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
-                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
-                "room_name": room_name,
-                "user_name": user_names
-            }
-            list_bookings.append(booking_info)
-
-        return BaseResponse.success(list_bookings)
-    except BadRequest as bad_request:
-        raise bad_request
-    except Exception as e:
-        raise InternalServerError("Internal Server Error")
-
-
+    except BadRequest as e:
+        raise BaseResponse.error(e)
+    except InternalServerError as e:
+        return BaseResponse.error(e)
 
 
 @booking_blueprint.route("/bookings", methods=["POST"])
