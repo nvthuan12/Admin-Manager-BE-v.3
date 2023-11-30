@@ -11,52 +11,69 @@ from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerEr
 from itertools import islice
 from math import ceil
 from collections import defaultdict
+from sqlalchemy import extract
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
+
 @booking_blueprint.route("/bookings", methods=["GET"])
 @jwt_required()
+@has_permission("view")
 def get_bookings():
     try:
-        bookings = Booking.query.join(Room).join(BookingUser).join(User).with_entities(
+        month = request.args.get('month', type=int)
+        year = request.args.get('year', type=int)
+
+        week_in_month = request.args.get('week_in_month', type=int)
+
+        if month is None or year is None:
+            raise BadRequest("Month and year are required parameters.")
+
+        bookings = Booking.query.filter(
+            extract('month', Booking.time_start) == month,
+            extract('year', Booking.time_start) == year
+        ).join(Room).join(BookingUser).join(User).with_entities(
             Booking.booking_id,
             Booking.room_id,
             Booking.title,
             Booking.time_start,
             Booking.time_end,
+            Booking.is_accepted,
             Room.room_name,
+            Room.is_blocked,
             BookingUser.user_id,
+            BookingUser.is_attending,
             User.user_name
         ).all()
 
         grouped_bookings = defaultdict(lambda: {
             "booking_id": None,
-            "user_name": [],
             "room_id": None,
-            "room_name": None,
             "title": None,
-            "time_end": None,
             "time_start": None,
-            "user_id": []
+            "time_end": None,
+            "is_accepted": None,
+            "room_name": None,
+            "is_blocked": None,
+            "user_id": [],
+            "is_attending": None,
+            "user_name": [] 
         })
 
         for booking in bookings:
-            booking_id = booking.booking_id
-            grouped_bookings[booking_id]["booking_id"] = booking_id
-            grouped_bookings[booking_id]["user_id"].append(booking.user_id)
-            grouped_bookings[booking_id]["user_name"].append(booking.user_name)
-            grouped_bookings[booking_id]["room_id"] = booking.room_id
-            grouped_bookings[booking_id]["room_name"] = booking.room_name
-            grouped_bookings[booking_id]["title"] = booking.title 
-            grouped_bookings[booking_id]["time_end"] = booking.time_end.strftime('%Y-%m-%d %H:%M:%S')
-            grouped_bookings[booking_id]["time_start"] = booking.time_start.strftime('%Y-%m-%d %H:%M:%S')
+            if week_in_month is not None:
+                if extract('week', booking.time_start) == week_in_month:
+                    process_booking(booking, grouped_bookings)
+            else:
+                process_booking(booking, grouped_bookings)
 
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
         start = (page - 1) * per_page
         end = start + per_page
 
-        paginated_grouped_bookings = list(islice(grouped_bookings.values(), start, end))
+        paginated_grouped_bookings = list(
+            islice(grouped_bookings.values(), start, end))
 
         total_items = len(grouped_bookings)
         total_pages = ceil(total_items / per_page)
@@ -68,9 +85,26 @@ def get_bookings():
             "per_page": per_page,
             "total_pages": total_pages
         }
-        return jsonify(result)
+    except BadRequest as bad_request:
+        raise bad_request
     except Exception as e:
-        raise InternalServerError()
+        raise InternalServerError("Internal Server Error")
+
+def process_booking(booking, grouped_bookings):
+    booking_id = booking.booking_id
+    grouped_bookings[booking_id]["booking_id"] = booking_id
+    grouped_bookings[booking_id]["user_id"].append(booking.user_id)
+    grouped_bookings[booking_id]["user_name"].append(booking.user_name)
+    grouped_bookings[booking_id]["room_id"] = booking.room_id
+    grouped_bookings[booking_id]["room_name"] = booking.room_name
+    grouped_bookings[booking_id]["title"] = booking.title
+    grouped_bookings[booking_id]["time_end"] = booking.time_end.strftime('%Y-%m-%d %H:%M:%S')
+    grouped_bookings[booking_id]["time_start"] = booking.time_start.strftime('%Y-%m-%d %H:%M:%S')
+    grouped_bookings[booking_id]["is_accepted"] = booking.is_accepted
+    grouped_bookings[booking_id]["is_blocked"] = booking.is_blocked
+    grouped_bookings[booking_id]["is_attending"] = booking.is_attending
+    print("Attributes for booking object:", dir(booking))
+
 
 @booking_blueprint.route("/bookings", methods=["POST"])
 @jwt_required()
@@ -87,7 +121,8 @@ def book_room():
         raise BadRequest('No staff members have been added to the meeting yet')
 
     if time_start >= time_end:
-        raise BadRequest('Invalid time input. End time must be greater than start time.')
+        raise BadRequest(
+            'Invalid time input. End time must be greater than start time.')
 
     if not (room_id and time_start and time_end and title and title.strip()):
         raise BadRequest('Invalid or empty values')
@@ -118,6 +153,7 @@ def book_room():
         db.session.rollback()
         raise InternalServerError()
 
+
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["PUT"])
 @jwt_required()
 @has_permission("update")
@@ -131,7 +167,7 @@ def update_booking(booking_id):
 
     if not user_ids:
         raise BadRequest("At least one user must be selected")
-    
+
     if not (room_id and time_start and time_end and title and title.strip()):
         raise BadRequest('Invalid or empty values')
 
@@ -175,6 +211,7 @@ def update_booking(booking_id):
     else:
         raise BadRequest('Invalid time input or missing user_id')
 
+
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["DELETE"])
 @jwt_required()
 @has_permission("delete")
@@ -185,10 +222,12 @@ def delete_booking(booking_id):
         if not booking:
             raise NotFound('Booking not found')
 
-        room_status = Room.query.filter_by(room_id=booking.room_id).value(Room.status)
+        room_status = Room.query.filter_by(
+            room_id=booking.room_id).value(Room.status)
 
         if room_status:
-            raise BadRequest('Cannot delete the booking, the room is currently in use')
+            raise BadRequest(
+                'Cannot delete the booking, the room is currently in use')
 
         BookingUser.query.filter_by(booking_id=booking.booking_id).delete()
         db.session.delete(booking)
