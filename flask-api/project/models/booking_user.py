@@ -11,5 +11,6 @@ class BookingUser(db.Model):
         return {
             'id': self.id,
             'booking_id': self.booking_id,
-            'user_id': self.user_id
+            'user_id': self.user_id,
+            'is_attending': self.is_attending
         }
