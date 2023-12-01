@@ -82,3 +82,23 @@ class BookingExecutor:
     @staticmethod
     def commit():
         db.session.commit()
+    
+    @staticmethod
+    def search_booking_users(start_date:str, end_date:str,user_ids: List[int] ) -> List[Booking]:
+        bookings = Booking.query.join(BookingUser).filter(
+            Booking.is_deleted == False,
+            Booking.time_start >= start_date,
+            Booking.time_start < end_date,
+            BookingUser.user_id.in_(user_ids)
+        ).all()
+        return bookings
+    
+    @staticmethod
+    def search_booking_room(start_date:str , end_date:str,room_id: int ) -> List[Booking]:
+        bookings = Booking.query.filter(
+            Booking.is_deleted == False,
+            Booking.time_start >= start_date,
+            Booking.time_start < end_date,
+            Booking.room_id== room_id
+        ).all()
+        return bookings
