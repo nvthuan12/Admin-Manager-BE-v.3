@@ -127,3 +127,45 @@ class BookingService:
 
         BookingExecutor.commit()
         return BaseResponse.success( 'Booking deleted successfully')
+    
+    @staticmethod
+    def search_booking_users(start_date: str, end_date: str ,user_ids: List[int] ) -> List[Booking]:
+        bookings = BookingExecutor.search_booking_users(start_date, end_date, user_ids)
+        list_bookings = []
+        for booking in bookings:
+            user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
+            user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
+            room = Room.query.filter_by(room_id=booking.room_id).first()
+            room_name = room.room_name if room else None
+            booking_info = {
+                "booking_id": booking.booking_id,
+                "title": booking.title,
+                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+                "room_name": room_name,
+                "user_ids": user_ids,  
+                "user_names": user_names
+            }
+            list_bookings.append(booking_info)
+        return list_bookings
+    
+    @staticmethod
+    def search_booking_room(start_date:str , end_date:str,room_id: int ) -> List[Booking]:
+        bookings = BookingExecutor.search_booking_room(start_date, end_date, room_id)
+        list_bookings = []
+        for booking in bookings:
+            user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
+            user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
+            room = Room.query.filter_by(room_id=booking.room_id).first()
+            room_name = room.room_name if room else None
+            booking_info = {
+                "booking_id": booking.booking_id,
+                "title": booking.title,
+                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+                "room_name": room_name,
+                "user_ids": user_ids,  
+                "user_names": user_names
+            }
+            list_bookings.append(booking_info)
+        return list_bookings
