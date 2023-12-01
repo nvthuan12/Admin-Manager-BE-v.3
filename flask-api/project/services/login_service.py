@@ -25,6 +25,7 @@ class AuthService:
         data = [
             {"token": access_token},
             {"role_name": role_name},
-            {"user_name": user_name}
+            {"user_name": user_name},
+            {"user_id": user.user_id}
         ]
         return data

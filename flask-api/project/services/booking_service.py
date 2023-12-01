@@ -102,8 +102,6 @@ class BookingService:
             if existing_booking:
                 raise Conflict('Room is already booked for this time')
 
-            
-
             BookingExecutor.update_booking(booking, room_id, title, time_start, time_end, user_ids,)
 
             return BaseResponse.success( 'Booking updated successfully')
