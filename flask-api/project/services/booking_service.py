@@ -1,5 +1,5 @@
 from project.database.excute.booking import BookingExecutor
-from project.models import Room, Booking
+from project.models import Room, Booking, BookingUser
 from project.api.common.base_response import BaseResponse
 from werkzeug.exceptions import BadRequest, InternalServerError, Conflict, NotFound
 from flask import request
@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import List
 from project.services.booking_service import BookingExecutor
 from project.database.excute.room import RoomExecutor
-from typing import Union, Dict, Optional
+from typing import Union, Dict, Optional, List
 
 class BookingService:
     @staticmethod
@@ -38,7 +38,8 @@ class BookingService:
                 "room_name": room_name,
                 "user_name": user_names,
                 "room_id": booking.room_id,
-                "user_id": user_ids
+                "user_id": user_ids,
+                "is_accepted": booking.is_accepted
             }
             list_bookings.append(booking_info)
 
@@ -73,7 +74,7 @@ class BookingService:
         return BaseResponse.success( 'Booking created successfully')
     
     @staticmethod
-    def update_booking(booking_id, data):
+    def update_booking(booking_id: int, data: Dict) -> Union[Dict, None]:
             room_id: int = data.get('room_id')
             title: str = data.get('title')
             time_start: str = data.get('time_start') 
@@ -97,7 +98,7 @@ class BookingService:
             if errors:
                 return BaseResponse.error_validate(errors)
 
-            existing_booking = BookingExecutor.check_room_availability(room_id, time_start, time_end)
+            existing_booking = BookingExecutor.check_room_availability_update(room_id, time_start, time_end, booking_id)
 
             if existing_booking:
                 raise Conflict('Room is already booked for this time')
@@ -105,3 +106,24 @@ class BookingService:
             BookingExecutor.update_booking(booking, room_id, title, time_start, time_end, user_ids,)
 
             return BaseResponse.success( 'Booking updated successfully')
+    
+    @staticmethod
+    def delete_booking_service(booking_id: int) -> Dict:
+        booking = Booking.query.get(booking_id)
+
+        if not booking:
+            raise NotFound('Booking not found')
+
+        if booking.is_deleted:
+            raise BadRequest('Booking is already deleted')
+
+        room_status = BookingExecutor.is_room_blocked(booking.room_id)
+
+        if room_status:
+            raise BadRequest('Cannot delete the booking, the room is currently in use')
+
+        booking.is_deleted = True
+        booking.deleted_at = datetime.now()
+
+        BookingExecutor.commit()
+        return BaseResponse.success( 'Booking deleted successfully')

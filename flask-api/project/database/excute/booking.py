@@ -1,7 +1,5 @@
-from project.models import Booking, BookingUser
-from datetime import datetime, timedelta
-from typing import List
-from sqlalchemy import or_
+from project.models import Booking, BookingUser, Room
+from typing import List, Optional, Union
 from project import db
 
 
@@ -14,15 +12,24 @@ class BookingExecutor:
         ).all()
     
     @staticmethod
-    def check_room_availability(room_id, time_start, time_end):
+    def check_room_availability(room_id: int, time_start: str, time_end: str) -> Optional[Booking]:
         return Booking.query.filter(
             Booking.room_id == room_id,
             Booking.time_end >= time_start,
             Booking.time_start <= time_end
         ).first()
+    
+    @staticmethod
+    def check_room_availability_update(room_id: int, time_start: str, time_end: str, booking_id: int) -> Optional[Booking]:
+        return Booking.query.filter(
+            Booking.room_id == room_id,
+            Booking.time_end >= time_start,
+            Booking.time_start <= time_end,
+            Booking.booking_id != booking_id
+        ).first()
 
     @staticmethod
-    def create_booking(room_id, title, time_start, time_end, user_ids):
+    def create_booking(room_id: int, title: str, time_start: str, time_end: str, user_ids: List[int]) -> Booking:
         try:
             new_booking = Booking(
                 room_id=room_id, title=title, time_start=time_start, time_end=time_end, is_accepted=True, is_deleted=False)
@@ -38,14 +45,18 @@ class BookingExecutor:
             return new_booking
         except Exception as e:
             db.session.rollback()
-            raise e  
+            raise e
         
     @staticmethod
-    def get_booking(booking_id):
+    def get_booking(booking_id: int) -> Optional[Booking]:
+        return Booking.query.get(booking_id)
+    
+    @staticmethod
+    def db_commit(booking_id: int) -> Optional[Booking]:
         return Booking.query.get(booking_id)
 
     @staticmethod
-    def update_booking(booking, room_id, title, time_start, time_end, user_ids):
+    def update_booking(booking: Booking, room_id: int, title: str, time_start: str, time_end: str, user_ids: List[int]) -> None:
         try:
             booking.room_id = room_id
             booking.title = title
@@ -56,10 +67,18 @@ class BookingExecutor:
 
             for user_id in user_ids:
                 user_booking = BookingUser(
-                    user_id=user_id, booking_id=booking.booking_id,is_attending=False)
+                    user_id=user_id, booking_id=booking.booking_id, is_attending=False)
                 db.session.add(user_booking)
 
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            raise  e
+            raise e
+        
+    @staticmethod
+    def is_room_blocked(room_id: int) -> Union[bool, None]:
+        return Room.query.filter_by(room_id=room_id).value(Room.is_blocked)
+    
+    @staticmethod
+    def commit():
+        db.session.commit()
