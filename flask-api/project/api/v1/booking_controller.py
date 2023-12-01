@@ -96,3 +96,73 @@ def delete_booking(booking_id):
     except IntegrityError:
         db.session.rollback()
         raise InternalServerError()
+@booking_blueprint.route("/bookings/search_users", methods=["GET"])
+@jwt_required()
+@has_permission("search")
+def Search_booking_users():
+    start_date = request.args.get('start_date', datetime.now().strftime('%Y-%m-%d'))
+    end_date = request.args.get('end_date')
+    user_ids =request.args.getlist('user_ids')
+
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d') if end_date else start_date + timedelta(days=6)
+    print("user_id:",user_ids)
+    bookings = Booking.query.join(BookingUser).filter(
+        Booking.is_deleted == False,
+        Booking.time_start >= start_date,
+        Booking.time_start < end_date,
+        BookingUser.user_id.in_(user_ids)
+    ).all()
+    
+    list_bookings = []
+    for booking in bookings:
+        user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
+        user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
+        room = Room.query.filter_by(room_id=booking.room_id).first()
+        room_name = room.room_name if room else None
+        booking_info = {
+            "booking_id": booking.booking_id,
+            "title": booking.title,
+            "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+            "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+            "room_name": room_name,
+            "user_ids": user_ids,  
+            "user_names": user_names
+        }
+        list_bookings.append(booking_info)
+    return list_bookings
+
+@booking_blueprint.route("/bookings/search_room/<int:room_id>", methods=["GET"])
+@jwt_required()
+@has_permission("search")
+def Search_booking_room(room_id: int):
+    start_date = request.args.get('start_date', datetime.now().strftime('%Y-%m-%d'))
+    end_date = request.args.get('end_date')
+    
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d') if end_date else start_date + timedelta(days=6)
+    print("room_id:",room_id)
+    bookings = Booking.query.filter(
+        Booking.is_deleted == False,
+        Booking.time_start >= start_date,
+        Booking.time_start < end_date,
+        Booking.room_id== room_id
+    ).all()
+    
+    list_bookings = []
+    for booking in bookings:
+        user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
+        user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
+        room = Room.query.filter_by(room_id=booking.room_id).first()
+        room_name = room.room_name if room else None
+        booking_info = {
+            "booking_id": booking.booking_id,
+            "title": booking.title,
+            "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+            "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+            "room_name": room_name,
+            "user_ids": user_ids,  
+            "user_names": user_names
+        }
+        list_bookings.append(booking_info)
+    return list_bookings
