@@ -85,3 +85,15 @@ def search_user_by_name_or_email():
         raise BaseResponse.error(e)
     except Exception as e:
         raise InternalServerError('Internal Server Error') from e
+    
+@user_blueprint.route('/users/<int:user_id>', methods=['GET'])
+@jwt_required()
+@has_permission("view")
+def get_detail_user(user_id):
+    try:
+        user=UserService.detail_user(user_id)
+        return BaseResponse.success(user)
+    except NotFound as e:
+        raise BaseResponse.error(e)
+    except Exception as e:
+        raise InternalServerError('Internal Server Error') from e 

@@ -156,3 +156,20 @@ class UserService:
             'total_pages': total_pages
         }
         return BaseResponse.success(result)
+    
+    @staticmethod
+    def detail_user(user_id: int):
+        user=UserExecutor.get_user(user_id)
+        if user is None:
+            raise NotFound("No data found")
+        role_names = [user_role.role.role_name for user_role in user.user_has_role]
+        user_info = {
+            "user_id": user.user_id,
+            "user_name": user.user_name,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "created_at": user.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "updated_at": user.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "role_name": role_names
+        }
+        return user_info
