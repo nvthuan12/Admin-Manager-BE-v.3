@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
 from project.api.common.base_response import BaseResponse
 from project.services.booking_service import BookingService
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict
 
 
@@ -39,6 +39,7 @@ def book_room_endpoint() -> dict:
     try:
         data = request.get_json()
         response_data: dict = BookingService.book_room(data)
+
         return response_data
 
     except BadRequest as e:
@@ -53,7 +54,7 @@ def book_room_endpoint() -> dict:
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["PUT"])
 @jwt_required()
 @has_permission("update")
-def update_booking_endpoint(booking_id):
+def update_booking_endpoint(booking_id: int):
     try:
         data = request.get_json()
         response_data = BookingService.update_booking(booking_id, data)
@@ -71,31 +72,23 @@ def update_booking_endpoint(booking_id):
     except InternalServerError as e:
         return BaseResponse.error(e)
 
-
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["DELETE"])
 @jwt_required()
 @has_permission("delete")
-def delete_booking(booking_id):
+def delete_booking(booking_id: int) -> Dict:
     try:
-        booking = Booking.query.get(booking_id)
-
-        if not booking:
-            raise NotFound('Booking not found')
-
-        room_status = Room.query.filter_by(
-            room_id=booking.room_id).value(Room.status)
-
-        if room_status:
-            raise BadRequest(
-                'Cannot delete the booking, the room is currently in use')
-
-        BookingUser.query.filter_by(booking_id=booking.booking_id).delete()
-        db.session.delete(booking)
-        db.session.commit()
-        return jsonify({'message': 'Booking deleted successfully'})
+        response_data = BookingService.delete_booking_service(booking_id)
+        return response_data
+    except NotFound as e:
+        return BaseResponse.error(e)
+    
+    except BadRequest as e:
+        return BaseResponse.error(e)
+    
     except IntegrityError:
         db.session.rollback()
-        raise InternalServerError()
+        return BaseResponse.error(e)
+    
 @booking_blueprint.route("/bookings/search_users", methods=["GET"])
 @jwt_required()
 @has_permission("search")
