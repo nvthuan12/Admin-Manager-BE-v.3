@@ -88,7 +88,7 @@ class UserService:
                 user_id=new_user.user_id, role_id=role_id)
             db.session.add(new_user_role)
             db.session.commit()
-        return BaseResponse.success("User created successfully")
+        return BaseResponse.success(message="User created successfully")
 
     @staticmethod
     def update_user(data: Dict, user_id: int):
@@ -124,7 +124,7 @@ class UserService:
             new_user_role = UserHasRole(user_id=user_id, role_id=role_id)
             db.session.add(new_user_role)
         db.session.commit()
-        return BaseResponse.success("Updated user successfully")
+        return BaseResponse.success(message="Updated user successfully")
 
     @staticmethod
     def delete_user(user_id: int):
@@ -134,7 +134,7 @@ class UserService:
         user.is_deleted = True
         user.updated_at = datetime.now()
         db.session.commit()
-        return BaseResponse.success("Deleted success!")
+        return BaseResponse.success(message="Deleted success!")
 
     @staticmethod
     def search_list_user(page: int, per_page: int, search: str):

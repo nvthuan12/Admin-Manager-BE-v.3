@@ -1,10 +1,13 @@
 from project.database.excute.booking import BookingExecutor
 from project.models import Room, Booking
 from project.api.common.base_response import BaseResponse
-from werkzeug.exceptions import BadRequest, InternalServerError
+from werkzeug.exceptions import BadRequest, InternalServerError, Conflict, NotFound
 from flask import request
 from datetime import datetime, timedelta
 from typing import List
+from project.services.booking_service import BookingExecutor
+from project.database.excute.room import RoomExecutor
+from typing import Union, Dict, Optional
 
 class BookingService:
     @staticmethod
@@ -24,6 +27,7 @@ class BookingService:
         for booking in bookings:
             user_names = [
                 booking_user.user.user_name for booking_user in booking.booking_user]
+            user_ids =  [booking_user.user_id for booking_user in booking.booking_user]
             room = Room.query.filter_by(room_id=booking.room_id).first()
             room_name = room.room_name if room else None
             booking_info = {
@@ -32,8 +36,74 @@ class BookingService:
                 "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
                 "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
                 "room_name": room_name,
-                "user_name": user_names
+                "user_name": user_names,
+                "room_id": booking.room_id,
+                "user_id": user_ids
             }
             list_bookings.append(booking_info)
 
         return list_bookings
+
+
+    @staticmethod
+    def book_room(data:  Dict) :
+        room_id = data.get('room_id')
+        title = data.get('title')
+        time_start= data.get('time_start')
+        time_end= data.get('time_end')
+        user_ids = data.get('user_id', [])
+
+        errors = []
+        validate_title = Booking.validate_title(title)
+        if validate_title:
+            errors.append(validate_title)
+
+        validate_time = Booking.validate_time(time_start, time_end)
+        if validate_time:
+            errors.append(validate_time)
+        if errors:
+            return BaseResponse.error_validate(errors)
+
+        existing_booking: Optional[Booking] = BookingExecutor.check_room_availability(room_id, time_start, time_end)
+
+        if existing_booking:
+            raise Conflict('Room is already booked for this time')
+        else:
+            new_booking = BookingExecutor.create_booking(room_id, title, time_start, time_end, user_ids)
+        return BaseResponse.success( 'Booking created successfully')
+    
+    @staticmethod
+    def update_booking(booking_id, data):
+            room_id: int = data.get('room_id')
+            title: str = data.get('title')
+            time_start: str = data.get('time_start') 
+            time_end: str = data.get('time_end')
+            user_ids: List[int] = data.get('user_id', [])
+
+            booking = BookingExecutor.get_booking(booking_id)
+
+            if not booking:
+                raise NotFound('Booking not found')
+            
+            errors = []
+            validate_title = Booking.validate_title(title)
+            if validate_title:
+                errors.append(validate_title)
+
+            validate_time = Booking.validate_time(time_start, time_end)
+            if validate_time:
+                errors.append(validate_time)
+
+            if errors:
+                return BaseResponse.error_validate(errors)
+
+            existing_booking = BookingExecutor.check_room_availability(room_id, time_start, time_end)
+
+            if existing_booking:
+                raise Conflict('Room is already booked for this time')
+
+            
+
+            BookingExecutor.update_booking(booking, room_id, title, time_start, time_end, user_ids,)
+
+            return BaseResponse.success( 'Booking updated successfully')
