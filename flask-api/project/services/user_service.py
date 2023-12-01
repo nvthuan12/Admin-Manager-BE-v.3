@@ -124,8 +124,7 @@ class UserService:
             new_user_role = UserHasRole(user_id=user_id, role_id=role_id)
             db.session.add(new_user_role)
         db.session.commit()
-        # return {"message": "Updated user successfully"}
-        return BaseResponse.success(message= "Updated user successfully")
+        return BaseResponse.success(message="Updated user successfully")
 
     @staticmethod
     def delete_user(user_id: int):

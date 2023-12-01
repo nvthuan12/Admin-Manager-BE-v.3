@@ -45,7 +45,7 @@ def create_room() -> BaseResponse:
     try:
         data: Dict = request.get_json()
         response_data = RoomService.create_room(data)
-        return BaseResponse.success(response_data)
+        return response_data
 
     except BadRequest as e:
         return BaseResponse.error(e)
@@ -59,8 +59,8 @@ def create_room() -> BaseResponse:
 def update_room(room_id: int):
     try:
         data: Dict = request.get_json()
-        RoomService.update_room(room_id, data)
-        return BaseResponse.success({"message": "Room updated successfully"})
+        response_data = RoomService.update_room(room_id, data)
+        return response_data
 
     except BadRequest as e:
         return BaseResponse.error(e)
@@ -75,7 +75,7 @@ def delete_room(room_id: int) -> BaseResponse:
     try:
         data: Dict = request.get_json()
         response_data: Dict = RoomService.delete_room(room_id, data)
-        return BaseResponse.success(response_data)
+        return response_data
 
     except NotFound as e:
         return BaseResponse.error(e)
@@ -93,7 +93,7 @@ def open_room(room_id: int):
     try:
         data = request.get_json()
         response_data = RoomService.open_room(room_id, data)
-        return BaseResponse.success(response_data)
+        return response_data
 
     except NotFound as e:
         return BaseResponse.error(e)

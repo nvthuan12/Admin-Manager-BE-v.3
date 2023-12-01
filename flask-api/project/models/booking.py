@@ -38,8 +38,11 @@ class Booking(db.Model):
 
     @staticmethod
     def validate_time(time_start: str, time_end: str) -> dict[str, str] | None:
+        current_time = str(datetime.now())
         if time_start >= time_end:
             return {"field": "time_end", "error": "Time end must be after time start"}
+        elif time_start < current_time or time_end < current_time:
+            return {"field": "time_start", "error": "Cannot select time in the past"}
         return None
 
     def validate_all_fields(self):
