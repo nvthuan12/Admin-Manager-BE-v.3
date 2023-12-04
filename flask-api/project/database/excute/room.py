@@ -84,10 +84,6 @@ class RoomExecutor:
                 Booking.time_start <= current_time,
                 Booking.time_end >= current_time
             ).all()
-            
-            print(f"Room {room.room_id}:")
-            print(f"Current time: {current_time}")
-            print(f"Bookings: {current_bookings}")
 
             room.is_blocked = bool(current_bookings)
 

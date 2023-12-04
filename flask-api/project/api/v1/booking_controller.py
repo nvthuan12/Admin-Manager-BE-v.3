@@ -128,3 +128,16 @@ def Search_booking_room(room_id: int):
         return BaseResponse.error(e)
     except InternalServerError as e:
         return BaseResponse.error(e)
+
+@booking_blueprint.route("/user/bookings", methods=["GET"])
+@jwt_required()
+@has_permission("view")
+def get_user_bookings() -> dict:
+    try:
+        response_data: dict = BookingService.get_bookings_in_date_range_user()
+        return BaseResponse.success(response_data)
+
+    except BadRequest as e:
+        return BaseResponse.error(e)
+    except InternalServerError as e:
+        return BaseResponse.error(e)
