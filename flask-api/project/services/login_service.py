@@ -1,9 +1,8 @@
 from project.database.excute.user import UserExecutor
 from datetime import timedelta
 from werkzeug.exceptions import BadRequest, Unauthorized
-from flask import jsonify
+from project.config import BaseConfig
 from flask_jwt_extended import create_access_token
-
 
 class AuthService:
     @staticmethod
@@ -18,7 +17,7 @@ class AuthService:
     @staticmethod
     def login_user(user: object):
         access_token = create_access_token(
-            identity=user.user_id, expires_delta=timedelta(days=1))
+            identity=user.user_id, expires_delta=timedelta(days=int(BaseConfig.TOKEN_EXPIRATION_DAYS)))
         role_name = UserExecutor.get_role_names(user.user_id)
         user_name = user.user_name
         access_token = access_token
