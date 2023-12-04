@@ -1,5 +1,5 @@
 from project.database.excute.booking import BookingExecutor
-from project.models import Room, Booking, BookingUser
+from project.models import Room, Booking, BookingUser, User
 from project.api.common.base_response import BaseResponse
 from werkzeug.exceptions import BadRequest, InternalServerError, Conflict, NotFound
 from flask import request
@@ -168,4 +168,53 @@ class BookingService:
                 "user_names": user_names
             }
             list_bookings.append(booking_info)
+        return list_bookings
+    
+    def get_user_id_from_session():
+        user_info = session.get('user_info') 
+        if user_info:
+            user_id = user_info.get('user_id')
+            return user_id
+        return None
+    
+    @staticmethod
+    def get_bookings_in_date_range_user() -> dict:
+        user_id = BookingService.get_user_id_from_session()
+        if not user_id:
+            raise BadRequest("User not logged in.")
+
+        start_date_str = request.args.get('start_date', None)
+        end_date_str = request.args.get('end_date', None)
+
+        if start_date_str and end_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1)
+        else:
+            raise BadRequest("Both start_date and end_date are required for date range query.")
+
+        bookings = BookingExecutor.get_bookings_in_date_range(start_date, end_date, user_id)
+        list_bookings = []
+        for booking in bookings:
+            user_ids = [booking_user.user_id for booking_user in booking.booking_user]
+            if user_id in user_ids:   
+                print(user_id, "000000000")
+                print(user_ids, "000000000")       
+                user_names = [
+                    booking_user.user.user_name for booking_user in booking.booking_user]
+                user_ids =  [booking_user.user_id for booking_user in booking.booking_user]
+                room = Room.query.filter_by(room_id=booking.room_id).first()
+                room_name = room.room_name if room else None
+                booking_info = {
+                    "booking_id": booking.booking_id,
+                    "title": booking.title,
+                    "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+                    "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+                    "room_name": room_name,
+                    "user_name": user_names,
+                    "room_id": booking.room_id,
+                    "user_id": user_ids,
+                    "is_accepted": booking.is_accepted
+                }
+                list_bookings.append(booking_info)
+
         return list_bookings

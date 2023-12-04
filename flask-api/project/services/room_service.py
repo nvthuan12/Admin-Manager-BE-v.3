@@ -1,5 +1,6 @@
 from project.database.excute.room import RoomExecutor
 from math import ceil
+from project import db
 from project.models import Room, Booking
 from werkzeug.exceptions import Conflict, BadRequest, NotFound, InternalServerError
 from typing import Optional, Dict, List
@@ -17,10 +18,6 @@ class RoomService:
             "per_page": per_page,
             "total_pages": total_pages
         }
-    
-    @staticmethod
-    def get_room_detail(room_id: int) -> Optional[Room]:
-        return RoomExecutor.get_room_detail(room_id)
     
     @staticmethod
     def get_room_detail(room_id: int) -> Optional[Room]:
@@ -65,7 +62,7 @@ class RoomService:
             raise BadRequest("Room name already exists")
 
         room_to_update.room_name = room_name
-        RoomExecutor.commit()
+        db.commit()
         return BaseResponse.success(message="update room successfully!")
         
 
