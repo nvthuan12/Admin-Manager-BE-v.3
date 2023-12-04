@@ -8,6 +8,7 @@ from typing import List
 from project.services.booking_service import BookingExecutor
 from project.database.excute.room import RoomExecutor
 from typing import Union, Dict, Optional, List
+from flask_jwt_extended import get_jwt_identity
 
 class BookingService:
     @staticmethod
@@ -170,19 +171,9 @@ class BookingService:
             list_bookings.append(booking_info)
         return list_bookings
     
-    def get_user_id_from_session():
-        user_info = session.get('user_info') 
-        if user_info:
-            user_id = user_info.get('user_id')
-            return user_id
-        return None
-    
     @staticmethod
     def get_bookings_in_date_range_user() -> dict:
-        user_id = BookingService.get_user_id_from_session()
-        if not user_id:
-            raise BadRequest("User not logged in.")
-
+        user_id = get_jwt_identity()
         start_date_str = request.args.get('start_date', None)
         end_date_str = request.args.get('end_date', None)
 
@@ -192,29 +183,32 @@ class BookingService:
         else:
             raise BadRequest("Both start_date and end_date are required for date range query.")
 
-        bookings = BookingExecutor.get_bookings_in_date_range(start_date, end_date, user_id)
+        bookings = BookingExecutor.get_bookings_in_date_range_user(start_date, end_date, user_id)
+
+        user_ids = [user_id for booking in bookings for user_id in (booking_user.user_id for booking_user in booking.booking_user)]
+
+        unique_user_ids = set(user_ids)
+
+        user_info = User.query.filter(User.user_id.in_(unique_user_ids)).all()
+        user_info_dict = {user.user_id: user.user_name for user in user_info}
+
         list_bookings = []
         for booking in bookings:
-            user_ids = [booking_user.user_id for booking_user in booking.booking_user]
-            if user_id in user_ids:   
-                print(user_id, "000000000")
-                print(user_ids, "000000000")       
-                user_names = [
-                    booking_user.user.user_name for booking_user in booking.booking_user]
-                user_ids =  [booking_user.user_id for booking_user in booking.booking_user]
-                room = Room.query.filter_by(room_id=booking.room_id).first()
-                room_name = room.room_name if room else None
-                booking_info = {
-                    "booking_id": booking.booking_id,
-                    "title": booking.title,
-                    "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
-                    "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
-                    "room_name": room_name,
-                    "user_name": user_names,
-                    "room_id": booking.room_id,
-                    "user_id": user_ids,
-                    "is_accepted": booking.is_accepted
-                }
-                list_bookings.append(booking_info)
+            room = Room.query.filter_by(room_id=booking.room_id).first()
+            room_name = room.room_name if room else None
+
+            booking_info = {
+                "booking_id": booking.booking_id,
+                "title": booking.title,
+                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+                "room_name": room_name,
+                "user_name": [user_info_dict[user.user_id] for user in booking.booking_user],
+                "room_id": booking.room_id,
+                "user_id": [user.user_id for user in booking.booking_user],
+                "is_accepted": booking.is_accepted
+            }
+
+            list_bookings.append(booking_info)
 
         return list_bookings
