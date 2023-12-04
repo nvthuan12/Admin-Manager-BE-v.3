@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from project import app, db
-from werkzeug.exceptions import Conflict, InternalServerError, NotFound
+from werkzeug.exceptions import Conflict, InternalServerError, NotFound, BadRequest, Unauthorized
 from project.models.user import User
 from project.models.role import Role
 from project.models.role_has_permission import RoleHasPermission
@@ -11,7 +11,6 @@ from project.api.v1.has_permission import has_permission
 from project.services.user_service import UserService
 from project.api.common.base_response import BaseResponse
 from datetime import datetime
-from sqlalchemy import or_
 
 user_blueprint = Blueprint('user', __name__)
 
@@ -69,6 +68,36 @@ def delete_user(user_id):
         return BaseResponse.error(e)
     except Exception as e:
         raise InternalServerError() from e
+
+@user_blueprint.route('/users/change_password', methods=['PUT'])
+@jwt_required()
+@has_permission("change_information")
+def change_password():
+    try:
+        data = request.get_json()
+        response = UserService.change_password(data)
+        return response
+    except NotFound as e:
+        return BaseResponse.error(e)
+    except BadRequest as e:
+        return BaseResponse.error(e)
+    except Unauthorized as e:
+        return BaseResponse.error(e)
+    except Exception as e:
+        return BaseResponse.error_validate(e)
+    
+@user_blueprint.route('/users/profile', methods=['PUT'])
+@jwt_required()
+@has_permission("change_information")
+def edit_profile():
+    try:
+        data = request.get_json()
+        response = UserService.edit_profile(data)
+        return response
+    except NotFound as e:
+        return BaseResponse.error(e)
+    except Exception as e:
+        return BaseResponse.error_validate(e)
 
 @user_blueprint.route('/users/search', methods=['GET'])
 @jwt_required()

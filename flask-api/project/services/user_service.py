@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from project import app, db
-from werkzeug.exceptions import Conflict, InternalServerError, NotFound
+from werkzeug.exceptions import Conflict, Unauthorized, NotFound, BadRequest
 from project.models.user import User
 from project.models.user_has_role import UserHasRole
 from project.models.user_has_role import UserHasRole
@@ -9,6 +9,7 @@ from project.database.excute.user import UserExecutor
 from typing import Dict, List
 from math import ceil
 from datetime import datetime
+from flask_jwt_extended import get_jwt_identity
 
 
 class UserService:
@@ -134,7 +135,7 @@ class UserService:
         user.is_deleted = True
         user.updated_at = datetime.now()
         db.session.commit()
-        return BaseResponse.success(message="Deleted success!")
+        return BaseResponse.success(message="Deleted successfully!")
 
     @staticmethod
     def search_list_user(page: int, per_page: int, search: str):
@@ -173,3 +174,55 @@ class UserService:
             "role_name": role_names
         }
         return user_info
+    
+    @staticmethod
+    def change_password(data: Dict):
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+
+        user_id = get_jwt_identity()
+        user = UserExecutor.get_user(user_id)
+
+        if not user:
+            raise NotFound("User not found with provided user_id.")
+            
+        validate_password=User.validate_password(new_password)
+        if validate_password:
+            return BaseResponse.error_validate(validate_password)
+        
+        if not user.check_password(current_password):
+            raise  Unauthorized("Invalid current password!")
+        elif confirm_password!=new_password:
+            raise  BadRequest("Confirm password does not match new password!")
+        
+        user.password=new_password
+        user.set_password(new_password)
+        db.session.commit()
+        return BaseResponse.success(message="Change password successfully!")
+    
+    @staticmethod
+    def edit_profile(data: Dict):
+        new_name = data.get('user_name')
+        new_phone_number = data.get('phone_number')
+        user_id = get_jwt_identity()
+        user = UserExecutor.get_user(user_id)
+
+        if not user:
+            raise NotFound("User not found with provided user_id.")
+            
+        errors = []
+        validate_phone_number = User.validate_phone_number(new_phone_number)
+        if validate_phone_number:
+            errors.append(validate_phone_number)
+
+        validate_user_name = User.validate_user_name(new_name)
+        if validate_user_name:
+            errors.append(validate_user_name)
+        if errors:
+            return BaseResponse.error_validate(errors)
+        
+        user.user_name=new_name
+        user.phone_number=new_phone_number
+        db.session.commit()
+        return BaseResponse.success(message="Update profile successfully!")
