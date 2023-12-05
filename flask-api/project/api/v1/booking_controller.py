@@ -13,9 +13,7 @@ from project.services.booking_service import BookingService
 from datetime import datetime, timedelta
 from typing import Dict
 
-
 booking_blueprint = Blueprint('booking_controller', __name__)
-
 
 @booking_blueprint.route("/bookings", methods=["GET"])
 @jwt_required()
@@ -160,7 +158,7 @@ def book_room_endpoint_user() -> dict:
 
     except InternalServerError as e:
         return BaseResponse.error(e)
-    
+      
 @booking_blueprint.route("/user/view_booked", methods=["GET"])
 @jwt_required()
 @has_permission("view")

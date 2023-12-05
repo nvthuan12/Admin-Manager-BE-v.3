@@ -5,7 +5,6 @@ from werkzeug.exceptions import BadRequest, InternalServerError, Conflict, NotFo
 from flask import request
 from datetime import datetime, timedelta
 from typing import List
-from project.services.booking_service import BookingExecutor
 from project.database.excute.room import RoomExecutor
 from typing import Union, Dict, Optional, List
 from math import ceil
@@ -46,7 +45,6 @@ class BookingService:
             list_bookings.append(booking_info)
 
         return list_bookings
-
 
     @staticmethod
     def book_room(data:  Dict) :
@@ -203,7 +201,8 @@ class BookingService:
                     "user_name": user_names,
                     "room_id": booking.room_id,
                     "user_id": user_ids,
-                    "is_accepted": booking.is_accepted
+                    "is_accepted": booking.is_accepted,
+                    "creator_id": booking.creator_id
                 }
                 list_bookings.append(booking_info)
 
@@ -235,7 +234,7 @@ class BookingService:
         else:
             new_booking = BookingExecutor.create_booking_belong_to_user(room_id, title, time_start, time_end, user_ids)
         return BaseResponse.success( 'Booking created successfully')
-    
+
     @staticmethod
     def user_view_list_booked(page: int, per_page: int) -> List[Booking]:
         creator_id=get_jwt_identity()
