@@ -72,23 +72,20 @@ class UserService:
         if validate_error:
             return BaseResponse.error_validate(validate_error)
 
-        existing_email = User.query.filter_by(email=email).first()
+        existing_email = UserExecutor.check_existing_email(email)
         if existing_email:
             raise Conflict("Email already exists")
 
-        existing_phone = User.query.filter_by(
-            phone_number=phone_number).first()
+        existing_phone = UserExecutor.check_existing_phone(phone_number)
         if existing_phone:
             raise Conflict("Phone number already exists")
 
         new_user.set_password(password)
-        UserExecutor.add_user(new_user)
+        db.session.add(new_user)
+        db.session.commit()
 
         for role_id in role_ids:
-            new_user_role = UserHasRole(
-                user_id=new_user.user_id, role_id=role_id)
-            db.session.add(new_user_role)
-            db.session.commit()
+            UserExecutor.add_user_role(new_user.user_id, role_id)
         return BaseResponse.success(message="User created successfully")
 
     @staticmethod
@@ -109,21 +106,20 @@ class UserService:
         validate_user_name = User.validate_user_name(user_name)
         if validate_user_name:
             errors.append(validate_user_name)
+
         if errors:
             return BaseResponse.error_validate(errors)
 
-        existing_phone = User.query.filter(
-            User.phone_number == phone_number, User.user_id != user_id).first()
+        existing_phone = UserExecutor.check_existing_phone(phone_number, user_id)
         if existing_phone:
             raise Conflict("Phone number already exists")
 
         user.user_name = user_name
         user.phone_number = phone_number
         user.updated_at = datetime.now()
-        UserHasRole.query.filter_by(user_id=user_id).delete()
+        UserExecutor.delete_user_role(user_id)
         for role_id in role_ids:
-            new_user_role = UserHasRole(user_id=user_id, role_id=role_id)
-            db.session.add(new_user_role)
+            UserExecutor.add_user_role(user_id, role_id)
         db.session.commit()
         return BaseResponse.success(message="Updated user successfully")
 
@@ -157,13 +153,14 @@ class UserService:
             'total_pages': total_pages
         }
         return BaseResponse.success(result)
-    
+
     @staticmethod
     def detail_user(user_id: int):
-        user=UserExecutor.get_user(user_id)
+        user = UserExecutor.get_user(user_id)
         if user is None:
             raise NotFound("No data found")
-        role_names = [user_role.role.role_name for user_role in user.user_has_role]
+        role_names = [
+            user_role.role.role_name for user_role in user.user_has_role]
         user_info = {
             "user_id": user.user_id,
             "user_name": user.user_name,
@@ -174,7 +171,7 @@ class UserService:
             "role_name": role_names
         }
         return user_info
-    
+
     @staticmethod
     def change_password(data: Dict):
         current_password = data.get('current_password')
@@ -186,21 +183,21 @@ class UserService:
 
         if not user:
             raise NotFound("User not found with provided user_id.")
-            
-        validate_password=User.validate_password(new_password)
+
+        validate_password = User.validate_password(new_password)
         if validate_password:
             return BaseResponse.error_validate(validate_password)
-        
+
         if not user.check_password(current_password):
-            raise  Unauthorized("Invalid current password!")
-        elif confirm_password!=new_password:
-            raise  BadRequest("Confirm password does not match new password!")
-        
-        user.password=new_password
+            raise Unauthorized("Invalid current password!")
+        elif confirm_password != new_password:
+            raise BadRequest("Confirm password does not match new password!")
+
+        user.password = new_password
         user.set_password(new_password)
         db.session.commit()
         return BaseResponse.success(message="Change password successfully!")
-    
+
     @staticmethod
     def edit_profile(data: Dict):
         new_name = data.get('user_name')
@@ -210,7 +207,7 @@ class UserService:
 
         if not user:
             raise NotFound("User not found with provided user_id.")
-            
+
         errors = []
         validate_phone_number = User.validate_phone_number(new_phone_number)
         if validate_phone_number:
@@ -221,8 +218,12 @@ class UserService:
             errors.append(validate_user_name)
         if errors:
             return BaseResponse.error_validate(errors)
-        
-        user.user_name=new_name
-        user.phone_number=new_phone_number
+
+        existing_phone = UserExecutor.check_existing_phone(new_phone_number, user_id)
+        if existing_phone:
+            raise Conflict("Phone number already exists")
+
+        user.user_name = new_name
+        user.phone_number = new_phone_number
         db.session.commit()
         return BaseResponse.success(message="Update profile successfully!")
