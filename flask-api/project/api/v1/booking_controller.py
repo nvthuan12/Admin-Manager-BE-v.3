@@ -160,3 +160,15 @@ def book_room_endpoint_user() -> dict:
 
     except InternalServerError as e:
         return BaseResponse.error(e)
+    
+@booking_blueprint.route("/user/view_booked", methods=["GET"])
+@jwt_required()
+@has_permission("view")
+def user_view_list_booked() -> dict:
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        result = BookingService.user_view_list_booked(page, per_page)
+        return BaseResponse.success(result)
+    except Exception as e:
+        raise InternalServerError('Internal Server Error') from e

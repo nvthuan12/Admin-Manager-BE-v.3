@@ -50,7 +50,7 @@ class UserExecutor:
     #     return []
 
     @staticmethod
-    def get_list_users(page: int, per_page: int):
+    def get_list_users(page: int, per_page: int)-> List[User]:
         users = User.query.filter_by(is_deleted=False).paginate(
             page=page, per_page=per_page, error_out=False)
 
