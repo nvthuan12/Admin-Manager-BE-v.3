@@ -8,10 +8,10 @@ class AuthService:
     @staticmethod
     def authenticate_user(email: str, password: str):
         if not email or not password:
-            raise BadRequest('Email and password are required.')
+            raise BadRequest({"error":"Email and password are required."})
         user = UserExecutor.get_user_by_email(email)
         if not user or not user.check_password(password):
-            raise Unauthorized('Invalid email or password.')
+            raise Unauthorized({"error":"Invalid email or password."})
         return user
 
     @staticmethod
