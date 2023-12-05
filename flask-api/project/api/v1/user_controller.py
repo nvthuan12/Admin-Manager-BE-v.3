@@ -96,6 +96,8 @@ def edit_profile():
         return response
     except NotFound as e:
         return BaseResponse.error(e)
+    except Conflict as e:
+        return BaseResponse.error(e)
     except Exception as e:
         return BaseResponse.error_validate(e)
 
