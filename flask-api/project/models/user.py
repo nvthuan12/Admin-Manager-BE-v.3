@@ -15,6 +15,7 @@ class User(db.Model):
     created_at = db.Column(db.TIMESTAMP, nullable=False)
     updated_at = db.Column(db.TIMESTAMP, nullable=False)
     is_deleted = db.Column(db.Boolean, nullable=False)
+    booking = db.relationship('Booking', backref='user')
     booking_user = db.relationship('BookingUser', backref='user')
     user_has_role = db.relationship('UserHasRole', backref='user')
 
@@ -31,7 +32,6 @@ class User(db.Model):
             'user_name': self.user_name,
             'email': self.email,
             'phone_number': self.phone_number,
-            # Chuyển đổi sang chuẩn ISO 8601 cho datetime
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted,
