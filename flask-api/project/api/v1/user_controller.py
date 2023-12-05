@@ -71,7 +71,7 @@ def delete_user(user_id):
 
 @user_blueprint.route('/users/change_password', methods=['PUT'])
 @jwt_required()
-@has_permission("change_information")
+@has_permission("update")
 def change_password():
     try:
         data = request.get_json()
@@ -88,7 +88,7 @@ def change_password():
     
 @user_blueprint.route('/users/profile', methods=['PUT'])
 @jwt_required()
-@has_permission("change_information")
+@has_permission("update")
 def edit_profile():
     try:
         data = request.get_json()

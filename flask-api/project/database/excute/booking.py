@@ -3,7 +3,6 @@ from typing import List, Optional, Union
 from project import db
 from flask_jwt_extended import get_jwt_identity
 
-
 class BookingExecutor:
     @staticmethod
     def get_bookings_in_date_range(start_date, end_date) -> List[Booking]:
@@ -159,3 +158,9 @@ class BookingExecutor:
         except Exception as e:
             db.session.rollback()
             raise e
+
+    @staticmethod
+    def user_view_list_booked(page: int, per_page: int, creator_id) -> List[Booking]:
+        bookings=Booking.query.filter(Booking.creator_id==creator_id).paginate(
+            page=page, per_page=per_page, error_out=False)   
+        return bookings

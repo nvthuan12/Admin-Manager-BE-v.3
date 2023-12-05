@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import List
 from project.database.excute.room import RoomExecutor
 from typing import Union, Dict, Optional, List
+from math import ceil
 from flask_jwt_extended import get_jwt_identity
 
 class BookingService:
@@ -44,7 +45,6 @@ class BookingService:
             list_bookings.append(booking_info)
 
         return list_bookings
-
 
     @staticmethod
     def book_room(data:  Dict) :
@@ -234,5 +234,42 @@ class BookingService:
         else:
             new_booking = BookingExecutor.create_booking_belong_to_user(room_id, title, time_start, time_end, user_ids)
         return BaseResponse.success( 'Booking created successfully')
-    
-    
+
+    @staticmethod
+    def user_view_list_booked(page: int, per_page: int) -> List[Booking]:
+        creator_id=get_jwt_identity()
+        bookings=BookingExecutor.user_view_list_booked(page, per_page, creator_id)
+        list_bookings = []
+        for booking in bookings:
+            user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
+            user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
+            user_created= User.query.filter_by(user_id=creator_id).first()
+            creator_name=user_created.user_name if user_created else None
+            room = Room.query.filter_by(room_id=booking.room_id).first()
+            room_name = room.room_name if room else None
+            
+            booking_info = {
+                "booking_id": booking.booking_id,
+                "title": booking.title,
+                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+                "room_name": room_name,
+                "user_ids": user_ids,  
+                "user_names": user_names,
+                "creator_name": creator_name,
+                "status":booking.is_accepted,
+                "is_deleted":booking.is_deleted
+            }
+            list_bookings.append(booking_info)   
+        total_items = bookings.total
+        total_pages = ceil(total_items / per_page)
+        per_page = per_page
+        current_page = page
+        result = {
+            'list_bookings': list_bookings,
+            'total_items': total_items,
+            'per_page': per_page,
+            'current_page': current_page,
+            'total_pages': total_pages
+        }
+        return result
