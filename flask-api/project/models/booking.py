@@ -13,6 +13,7 @@ class Booking(db.Model):
     is_deleted = db.Column(db.Boolean, nullable=False)
     deleted_at = db.Column(db.TIMESTAMP, nullable=True)
     room_id = db.Column(db.Integer, db.ForeignKey('room.room_id'))
+    creator_id=db.Column(db.Integer, db.ForeignKey('user.user_id'))
     booking_user = db.relationship('BookingUser', backref='booking')
 
     def serialize(self):
@@ -24,6 +25,7 @@ class Booking(db.Model):
             'is_accepted': self.is_accepted,
             'is_deleted': self.is_deleted,
             'room_id': self.room_id,
+            'creator_id': self.creator_id,
             'booking_user': [be.serialize() for be in self.booking_user],
             'deleted_at': self.deleted_at
         }
