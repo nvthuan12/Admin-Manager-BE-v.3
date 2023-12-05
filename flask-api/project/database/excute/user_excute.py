@@ -1,6 +1,8 @@
 from project.models import Booking, BookingUser, Room
 from typing import List, Optional, Union
 from project import db
+from flask_jwt_extended import get_jwt_identity
+
 
 class UserBookingExecutor:
     @staticmethod
@@ -21,9 +23,10 @@ class UserBookingExecutor:
     
     @staticmethod
     def create_booking_belong_to_user(room_id: int, title: str, time_start: str, time_end: str, user_ids: List[int]) -> Booking:
+        user_id = get_jwt_identity()
         try:
             new_booking = Booking(
-                room_id=room_id, title=title, time_start=time_start, time_end=time_end, is_accepted=False, is_deleted=False)
+                room_id=room_id, title=title, time_start=time_start, time_end=time_end, is_accepted=False, is_deleted=False, creator_id = user_id)
             db.session.add(new_booking)
             db.session.commit()
 

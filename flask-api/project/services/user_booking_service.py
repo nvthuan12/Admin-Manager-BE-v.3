@@ -1,21 +1,20 @@
-from project.database.excute.booking import BookingExecutor
 from project.models import Room, Booking, BookingUser, User
 from project.api.common.base_response import BaseResponse
 from werkzeug.exceptions import BadRequest, InternalServerError, Conflict, NotFound
 from flask import request
 from datetime import datetime, timedelta
 from typing import List
-from project.services.booking_service import BookingExecutor
 from project.database.excute.room import RoomExecutor
 from typing import Union, Dict, Optional, List
 from flask_jwt_extended import get_jwt_identity
-
+from project.database.excute.user_excute import UserBookingExecutor
 class UserBookingService:
     @staticmethod
     def get_bookings_in_date_range_user() -> dict:
         user_id = get_jwt_identity()
         start_date_str = request.args.get('start_date', None)
         end_date_str = request.args.get('end_date', None)
+        creator_id = user_id
 
         if start_date_str and end_date_str:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
@@ -23,7 +22,7 @@ class UserBookingService:
         else:
             raise BadRequest("Both start_date and end_date are required for date range query.")
 
-        bookings = BookingExecutor.get_bookings_in_date_range_user(start_date, end_date, user_id)
+        bookings = UserBookingExecutor.get_bookings_in_date_range_user(start_date, end_date, user_id)
         list_bookings = []
         for booking in bookings:
             user_ids = [booking_user.user_id for booking_user in booking.booking_user]
@@ -42,7 +41,8 @@ class UserBookingService:
                     "user_name": user_names,
                     "room_id": booking.room_id,
                     "user_id": user_ids,
-                    "is_accepted": booking.is_accepted
+                    "is_accepted": booking.is_accepted,
+                    "creator_id": booking.creator_id
                 }
                 list_bookings.append(booking_info)
 
@@ -67,10 +67,10 @@ class UserBookingService:
         if errors:
             return BaseResponse.error_validate(errors)
 
-        existing_booking: Optional[Booking] = BookingExecutor.check_room_availability(room_id, time_start, time_end)
+        existing_booking: Optional[Booking] = UserBookingExecutor.check_room_availability(room_id, time_start, time_end)
 
         if existing_booking:
             raise Conflict('Room is already booked for this time')
         else:
-            new_booking = BookingExecutor.create_booking_belong_to_user(room_id, title, time_start, time_end, user_ids)
+            new_booking = UserBookingExecutor.create_booking_belong_to_user(room_id, title, time_start, time_end, user_ids)
         return BaseResponse.success( 'Booking created successfully')

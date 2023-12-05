@@ -5,7 +5,6 @@ from werkzeug.exceptions import BadRequest, InternalServerError, Conflict, NotFo
 from flask import request
 from datetime import datetime, timedelta
 from typing import List
-from project.services.booking_service import UserBookingExecutor
 from project.database.excute.room import RoomExecutor
 from typing import Union, Dict, Optional, List
 from flask_jwt_extended import get_jwt_identity
@@ -66,7 +65,7 @@ class BookingService:
         if errors:
             return BaseResponse.error_validate(errors)
 
-        existing_booking: Optional[Booking] = UserBookingExecutor.check_room_availability(room_id, time_start, time_end)
+        existing_booking: Optional[Booking] = BookingExecutor.check_room_availability(room_id, time_start, time_end)
 
         if existing_booking:
             raise Conflict('Room is already booked for this time')
