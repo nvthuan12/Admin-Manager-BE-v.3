@@ -175,7 +175,6 @@ class BookingService:
         user_id = get_jwt_identity()
         start_date_str = request.args.get('start_date', None)
         end_date_str = request.args.get('end_date', None)
-        creator_id = user_id
 
         if start_date_str and end_date_str:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')

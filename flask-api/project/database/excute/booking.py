@@ -103,14 +103,7 @@ class BookingExecutor:
             Booking.room_id== room_id
         ).all()
         return bookings
-    
-    @staticmethod
-    def get_bookings_in_date_range_user(start_date, end_date, user_id) -> List[Booking]:
-        return Booking.query.filter(
-            BookingUser.user_id == user_id,
-            Booking.is_deleted == False,
-            Booking.time_end.between(start_date, end_date)
-        ).all()
+
     
     @staticmethod
     def create_booking_belong_to_user(room_id: int, title: str, time_start: str, time_end: str, user_ids: List[int]) -> Booking:

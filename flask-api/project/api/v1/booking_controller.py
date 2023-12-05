@@ -12,8 +12,6 @@ from project.api.common.base_response import BaseResponse
 from project.services.booking_service import BookingService
 from datetime import datetime, timedelta
 from typing import Dict
-from project.services.user_booking_service import UserBookingService
-
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
@@ -135,7 +133,7 @@ def Search_booking_room(room_id: int):
 @has_permission("view")
 def get_user_bookings() -> dict:
     try:
-        response_data: dict = UserBookingService.get_bookings_in_date_range_user()
+        response_data: dict = BookingService.get_bookings_in_date_range_user()
         return BaseResponse.success(response_data)
 
     except BadRequest as e:
@@ -149,7 +147,7 @@ def get_user_bookings() -> dict:
 def book_room_endpoint_user() -> dict:
     try:
         data = request.get_json()
-        response_data: dict = UserBookingService.book_room_belong_to_user(data)
+        response_data: dict = BookingService.book_room_belong_to_user(data)
 
         return response_data
 
