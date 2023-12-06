@@ -63,7 +63,7 @@ class BookingService:
         title = data.get('title')
         time_start= data.get('time_start')
         time_end= data.get('time_end')
-        user_ids = data.get('user_id', [])
+        user_ids = data.get('user_ids', [])
 
         errors = []
         validate_title = Booking.validate_title(title)
@@ -90,7 +90,7 @@ class BookingService:
             title: str = data.get('title')
             time_start: str = data.get('time_start') 
             time_end: str = data.get('time_end')
-            user_ids: List[int] = data.get('user_id', [])
+            user_ids: List[int] = data.get('user_ids', [])
 
             booking = BookingExecutor.get_booking(booking_id)
 
@@ -173,7 +173,7 @@ class BookingService:
         title = data.get('title')
         time_start= data.get('time_start')
         time_end= data.get('time_end')
-        user_ids = data.get('user_id', [])
+        user_ids = data.get('user_ids', [])
 
         errors = []
         validate_title = Booking.validate_title(title)
