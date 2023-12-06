@@ -28,7 +28,6 @@ def get_bookings() -> dict:
     except InternalServerError as e:
         return BaseResponse.error(e)
 
-
 @booking_blueprint.route("/bookings", methods=["POST"])
 @jwt_required()
 @has_permission("create")
@@ -47,7 +46,6 @@ def book_room_endpoint() -> dict:
 
     except InternalServerError as e:
         return BaseResponse.error(e)
-
 
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["PUT"])
 @jwt_required()
@@ -70,7 +68,6 @@ def update_booking_endpoint(booking_id: int):
     except InternalServerError as e:
         return BaseResponse.error(e)
 
-
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["DELETE"])
 @jwt_required()
 @has_permission("delete")
@@ -87,7 +84,6 @@ def delete_booking(booking_id: int) -> Dict:
     except IntegrityError:
         db.session.rollback()
         return BaseResponse.error(e)
-
 
 @booking_blueprint.route("/bookings/search_users", methods=["GET"])
 @jwt_required()
@@ -107,7 +103,6 @@ def Search_booking_users():
         return BaseResponse.error(e)
     except InternalServerError as e:
         return BaseResponse.error(e)
-
 
 @booking_blueprint.route("/bookings/search_room/<int:room_id>", methods=["GET"])
 @jwt_required()
@@ -194,3 +189,43 @@ def detail_booking(booking_id: int) -> dict:
         return BaseResponse.error(e)
     except Exception as e:
         raise InternalServerError('Internal Server Error') from e
+
+@booking_blueprint.route("/bookings/<int:booking_id>/accept", methods=["PUT"])
+@jwt_required()
+@has_permission("update")
+def accept_booking_endpoint(booking_id: int):
+    try:
+        response_data = BookingService.accept_booking(booking_id)
+        return response_data
+    
+    except BadRequest as e:
+        return BaseResponse.error(e)
+
+    except Conflict as e:
+        return BaseResponse.error(e)
+
+    except NotFound as e:
+        return BaseResponse.error(e)
+
+    except InternalServerError as e:
+        return BaseResponse.error(e)
+    
+@booking_blueprint.route("/bookings/<int:booking_id>/reject", methods=["PUT"])
+@jwt_required()
+@has_permission("update")
+def reject_booking_endpoint(booking_id: int):
+    try:
+        response_data = BookingService.reject_booking(booking_id)
+        return response_data
+
+    except BadRequest as e:
+        return BaseResponse.error(e)
+
+    except Conflict as e:
+        return BaseResponse.error(e)
+
+    except NotFound as e:
+        return BaseResponse.error(e)
+
+    except InternalServerError as e:
+        return BaseResponse.error(e)
