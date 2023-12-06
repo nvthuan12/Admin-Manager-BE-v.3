@@ -170,3 +170,27 @@ def user_view_list_booked() -> dict:
         return BaseResponse.success(result)
     except Exception as e:
         raise InternalServerError('Internal Server Error') from e
+
+@booking_blueprint.route("/admin/view_booking_pending", methods=["GET"])
+@jwt_required()
+@has_permission("view")
+def admin_view_booking_pending() -> dict:
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        result = BookingService.admin_view_booking_pending(page, per_page)
+        return BaseResponse.success(result)
+    except Exception as e:
+        raise InternalServerError('Internal Server Error') from e
+
+@booking_blueprint.route("/bookings/<int:booking_id>", methods=["GET"])
+@jwt_required()
+@has_permission("view")
+def detail_booking(booking_id: int) -> dict:
+    try:
+        result = BookingService.detail_booking(booking_id)
+        return BaseResponse.success(result)
+    except NotFound as e:
+        return BaseResponse.error(e)
+    except Exception as e:
+        raise InternalServerError('Internal Server Error') from e
