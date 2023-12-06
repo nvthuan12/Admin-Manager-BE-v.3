@@ -9,6 +9,7 @@ from project.database.excute.room import RoomExecutor
 from typing import Union, Dict, Optional, List
 from math import ceil
 from flask_jwt_extended import get_jwt_identity
+from project import db
 
 class BookingService:
     @staticmethod
@@ -273,3 +274,35 @@ class BookingService:
             'total_pages': total_pages
         }
         return result
+    
+    @staticmethod
+    def accept_booking(booking_id: int):
+        booking = BookingExecutor.get_booking(booking_id)
+        try:
+            booking.is_accepted = True
+            booking.is_deleted = False
+            booking.deleted_at = None 
+
+            db.session.commit()
+
+            return BaseResponse.success('Booking accepted successfully')
+
+        except Exception as e:
+            db.session.rollback()
+            raise InternalServerError(e)
+    
+    @staticmethod
+    def reject_booking(booking_id: int):
+        booking = BookingExecutor.get_booking(booking_id)
+        try:
+            booking.is_accepted = False
+            booking.is_deleted = True
+            booking.deleted_at = datetime.now()
+
+            db.session.commit()
+
+            return BaseResponse.success('Booking rejected successfully')
+
+        except Exception as e:
+            db.session.rollback()
+            raise InternalServerError(e)
