@@ -127,4 +127,4 @@ def get_detail_user(user_id):
     except NotFound as e:
         raise BaseResponse.error(e)
     except Exception as e:
-        raise InternalServerError('Internal Server Error') from e 
+        raise InternalServerError(e) 
