@@ -133,10 +133,10 @@ class BookingExecutor:
     
     @staticmethod
     def get_bookings_in_date_range_user(start_date, end_date, user_id) -> List[Booking]:
-        return Booking.query.filter(
-            BookingUser.user_id == user_id,
+        return Booking.query.join(BookingUser,Booking.booking_id==BookingUser.booking_id).filter(
             Booking.is_deleted == False,
-            Booking.time_end.between(start_date, end_date)
+            Booking.time_end.between(start_date, end_date),
+            BookingUser.user_id == user_id
         ).all()
     
     @staticmethod
@@ -162,5 +162,11 @@ class BookingExecutor:
     @staticmethod
     def user_view_list_booked(page: int, per_page: int, creator_id) -> List[Booking]:
         bookings=Booking.query.filter(Booking.creator_id==creator_id).paginate(
+            page=page, per_page=per_page, error_out=False)   
+        return bookings
+    
+    @staticmethod
+    def admin_view_booking_pending(page: int, per_page: int) -> List[Booking]:
+        bookings=Booking.query.filter(Booking.is_accepted==False).paginate(
             page=page, per_page=per_page, error_out=False)   
         return bookings

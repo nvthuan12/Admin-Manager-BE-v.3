@@ -12,6 +12,35 @@ from flask_jwt_extended import get_jwt_identity
 from project import db
 
 class BookingService:
+
+    @staticmethod
+    def show_list_booking(bookings: List[Booking]):
+        list_bookings = []
+        for booking in bookings:
+            user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
+            user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
+            user_created= User.query.filter_by(user_id=booking.creator_id).first()
+            creator_name=user_created.user_name if user_created else None
+            room = Room.query.filter_by(room_id=booking.room_id).first()
+            room_name = room.room_name if room else None
+            
+            booking_info = {
+                "booking_id": booking.booking_id,
+                "title": booking.title,
+                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+                "room_id": booking.room_id,
+                "room_name": room_name,
+                "user_ids": user_ids,  
+                "user_names": user_names,
+                "creator_id": booking.creator_id,
+                "creator_name": creator_name,
+                "is_accepted":booking.is_accepted,
+                "is_deleted":booking.is_deleted
+            }
+            list_bookings.append(booking_info) 
+        return list_bookings
+
     @staticmethod
     def get_bookings_in_date_range() -> dict:
         start_date_str = request.args.get('start_date', None)
@@ -25,26 +54,7 @@ class BookingService:
 
         bookings = BookingExecutor.get_bookings_in_date_range(start_date, end_date)
 
-        list_bookings = []
-        for booking in bookings:
-            user_names = [
-                booking_user.user.user_name for booking_user in booking.booking_user]
-            user_ids =  [booking_user.user_id for booking_user in booking.booking_user]
-            room = Room.query.filter_by(room_id=booking.room_id).first()
-            room_name = room.room_name if room else None
-            booking_info = {
-                "booking_id": booking.booking_id,
-                "title": booking.title,
-                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
-                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
-                "room_name": room_name,
-                "user_name": user_names,
-                "room_id": booking.room_id,
-                "user_id": user_ids,
-                "is_accepted": booking.is_accepted
-            }
-            list_bookings.append(booking_info)
-
+        list_bookings = BookingService.show_list_booking(bookings)
         return list_bookings
 
     @staticmethod
@@ -132,43 +142,13 @@ class BookingService:
     @staticmethod
     def search_booking_users(start_date: str, end_date: str ,user_ids: List[int] ) -> List[Booking]:
         bookings = BookingExecutor.search_booking_users(start_date, end_date, user_ids)
-        list_bookings = []
-        for booking in bookings:
-            user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
-            user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
-            room = Room.query.filter_by(room_id=booking.room_id).first()
-            room_name = room.room_name if room else None
-            booking_info = {
-                "booking_id": booking.booking_id,
-                "title": booking.title,
-                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
-                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
-                "room_name": room_name,
-                "user_ids": user_ids,  
-                "user_names": user_names
-            }
-            list_bookings.append(booking_info)
+        list_bookings = BookingService.show_list_booking(bookings)
         return list_bookings
     
     @staticmethod
     def search_booking_room(start_date:str , end_date:str,room_id: int ) -> List[Booking]:
         bookings = BookingExecutor.search_booking_room(start_date, end_date, room_id)
-        list_bookings = []
-        for booking in bookings:
-            user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
-            user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
-            room = Room.query.filter_by(room_id=booking.room_id).first()
-            room_name = room.room_name if room else None
-            booking_info = {
-                "booking_id": booking.booking_id,
-                "title": booking.title,
-                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
-                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
-                "room_name": room_name,
-                "user_ids": user_ids,  
-                "user_names": user_names
-            }
-            list_bookings.append(booking_info)
+        list_bookings = BookingService.show_list_booking(bookings)
         return list_bookings
     
     @staticmethod
@@ -184,29 +164,7 @@ class BookingService:
             raise BadRequest("Both start_date and end_date are required for date range query.")
 
         bookings = BookingExecutor.get_bookings_in_date_range_user(start_date, end_date, user_id)
-        list_bookings = []
-        for booking in bookings:
-            user_ids = [booking_user.user_id for booking_user in booking.booking_user]
-            if user_id in user_ids:        
-                user_names = [
-                    booking_user.user.user_name for booking_user in booking.booking_user]
-                user_ids =  [booking_user.user_id for booking_user in booking.booking_user]
-                room = Room.query.filter_by(room_id=booking.room_id).first()
-                room_name = room.room_name if room else None
-                booking_info = {
-                    "booking_id": booking.booking_id,
-                    "title": booking.title,
-                    "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
-                    "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
-                    "room_name": room_name,
-                    "user_name": user_names,
-                    "room_id": booking.room_id,
-                    "user_id": user_ids,
-                    "is_accepted": booking.is_accepted,
-                    "creator_id": booking.creator_id
-                }
-                list_bookings.append(booking_info)
-
+        list_bookings = BookingService.show_list_booking(bookings)
         return list_bookings
     
     @staticmethod
@@ -240,28 +198,7 @@ class BookingService:
     def user_view_list_booked(page: int, per_page: int) -> List[Booking]:
         creator_id=get_jwt_identity()
         bookings=BookingExecutor.user_view_list_booked(page, per_page, creator_id)
-        list_bookings = []
-        for booking in bookings:
-            user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
-            user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
-            user_created= User.query.filter_by(user_id=creator_id).first()
-            creator_name=user_created.user_name if user_created else None
-            room = Room.query.filter_by(room_id=booking.room_id).first()
-            room_name = room.room_name if room else None
-            
-            booking_info = {
-                "booking_id": booking.booking_id,
-                "title": booking.title,
-                "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
-                "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
-                "room_name": room_name,
-                "user_ids": user_ids,  
-                "user_names": user_names,
-                "creator_name": creator_name,
-                "status":booking.is_accepted,
-                "is_deleted":booking.is_deleted
-            }
-            list_bookings.append(booking_info)   
+        list_bookings = BookingService.show_list_booking(bookings)   
         total_items = bookings.total
         total_pages = ceil(total_items / per_page)
         per_page = per_page
@@ -275,6 +212,53 @@ class BookingService:
         }
         return result
     
+    @staticmethod
+    def admin_view_booking_pending(page: int, per_page: int) -> List[Booking]:
+        bookings=BookingExecutor.admin_view_booking_pending(page, per_page)
+        list_bookings=BookingService.show_list_booking(bookings)  
+        total_items = bookings.total
+        total_pages = ceil(total_items / per_page)
+        per_page = per_page
+        current_page = page
+        result = {
+            'list_bookings': list_bookings,
+            'total_items': total_items,
+            'per_page': per_page,
+            'current_page': current_page,
+            'total_pages': total_pages
+        }
+        return result
+    
+    @staticmethod
+    def detail_booking(booking_id: int):
+        booking=BookingExecutor.get_booking(booking_id)
+        if not booking:
+            raise NotFound('Booking not found')
+        user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
+        user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
+
+        user_created = User.query.filter_by(user_id=booking.creator_id).first()
+        creator_name = user_created.user_name if user_created else None
+
+        room = RoomExecutor.get_room_by_id(booking.room_id)
+        room_name = room.room_name if room else None
+
+        booking_info = {
+            "booking_id": booking.booking_id,
+            "title": booking.title,
+            "time_start": booking.time_start.strftime('%Y-%m-%d %H:%M:%S'),
+            "time_end": booking.time_end.strftime('%Y-%m-%d %H:%M:%S'),
+            "room_id": booking.room_id,
+            "room_name": room_name,
+            "user_ids": user_ids,
+            "user_names": user_names,
+            "creator_id": booking.creator_id,
+            "creator_name": creator_name,
+            "is_accepted": booking.is_accepted,
+            "is_deleted": booking.is_deleted
+        }
+        return  booking_info
+      
     @staticmethod
     def accept_booking(booking_id: int):
         booking = BookingExecutor.get_booking(booking_id)
