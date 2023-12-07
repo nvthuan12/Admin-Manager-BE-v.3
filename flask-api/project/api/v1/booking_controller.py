@@ -109,14 +109,9 @@ def Search_booking_users():
 @has_permission("search")
 def Search_booking_room(room_id: int):
     try:
-        start_date = request.args.get(
-            'start_date', datetime.now().strftime('%Y-%m-%d'))
-        end_date = request.args.get('end_date')
-
-        response_data: dict = BookingService.search_booking_room(
-            start_date, end_date, room_id)
+        response_data: dict = BookingService.search_booking_room( room_id)
         return BaseResponse.success(response_data)
-
+    
     except BadRequest as e:
         return BaseResponse.error(e)
     except InternalServerError as e:
@@ -188,7 +183,7 @@ def detail_booking(booking_id: int) -> dict:
     except NotFound as e:
         return BaseResponse.error(e)
     except Exception as e:
-        raise InternalServerError('Internal Server Error') from e
+        raise InternalServerError(e) 
 
 @booking_blueprint.route("/bookings/<int:booking_id>/accept", methods=["PUT"])
 @jwt_required()

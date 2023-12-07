@@ -89,7 +89,7 @@ class BookingExecutor:
         bookings = Booking.query.join(BookingUser).filter(
             Booking.is_deleted == False,
             Booking.time_start >= start_date,
-            Booking.time_start < end_date,
+            Booking.time_start <= end_date,
             BookingUser.user_id.in_(user_ids)
         ).all()
         return bookings
@@ -99,7 +99,7 @@ class BookingExecutor:
         bookings = Booking.query.filter(
             Booking.is_deleted == False,
             Booking.time_start >= start_date,
-            Booking.time_start < end_date,
+            Booking.time_start <= end_date,
             Booking.room_id == room_id
         ).all()
         return bookings
