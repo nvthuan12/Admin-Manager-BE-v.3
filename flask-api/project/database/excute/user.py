@@ -39,15 +39,6 @@ class UserExecutor:
             permission_names = [rp[0] for rp in role_permissions]
             return permission_names
         return []
-    # def get_permission_names_by_role_name(role_name: str):
-    #     role = Role.query.filter_by(role_name=role_name).first()
-    #     if role:
-    #         permissions = [
-    #             role_has_permission.permission.permission_name
-    #             for role_has_permission in role.role_has_permission
-    #         ]
-    #         return permissions
-    #     return []
 
     @staticmethod
     def get_list_users(page: int, per_page: int)-> List[User]:

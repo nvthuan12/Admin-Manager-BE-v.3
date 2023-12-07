@@ -14,19 +14,12 @@ class BookingExecutor:
         ).all()
 
     @staticmethod
-    def check_room_availability(room_id: int, time_start: str, time_end: str) -> Optional[Booking]:
-        return Booking.query.filter(
-            Booking.room_id == room_id,
-            Booking.time_end >= time_start,
-            Booking.time_start <= time_end
-        ).first()
-
-    @staticmethod
     def check_room_availability_update(room_id: int, time_start: str, time_end: str, booking_id: int) -> Optional[Booking]:
         return Booking.query.filter(
             Booking.room_id == room_id,
-            Booking.time_end >= time_start,
-            Booking.time_start <= time_end,
+            Booking.is_deleted == False,
+            Booking.time_end > time_start,
+            Booking.time_start < time_end,
             Booking.booking_id != booking_id
         ).first()
 
@@ -114,8 +107,9 @@ class BookingExecutor:
     def check_room_availability(room_id: int, time_start: str, time_end: str) -> Optional[Booking]:
         return Booking.query.filter(
             Booking.room_id == room_id,
-            Booking.time_end >= time_start,
-            Booking.time_start <= time_end
+            Booking.is_deleted==False,
+            Booking.time_end > time_start,
+            Booking.time_start < time_end
         ).first()
 
     @staticmethod
