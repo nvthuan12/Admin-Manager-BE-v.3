@@ -36,4 +36,4 @@ def login():
 def logout():
     response = jsonify(message='Logout successfully')
     unset_jwt_cookies(response)
-    return response, 200
+    return BaseResponse.success(message="Logout successfully!")

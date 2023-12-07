@@ -4,7 +4,7 @@ class BookingUser(db.Model):
     __tablename__ = "booking_user"
     id = db.Column(db.Integer, primary_key=True)
     booking_id = db.Column(db.Integer, db.ForeignKey('booking.booking_id'))
-    is_attending = db.Column(db.Boolean, nullable=False)
+    is_attending = db.Column(db.Boolean, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
 
     def serialize(self):

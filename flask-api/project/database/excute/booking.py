@@ -1,11 +1,15 @@
-from project.models import Booking, BookingUser, Room
+from project.models import Booking, BookingUser, Room, User
 from typing import List, Optional, Union
 from project import db
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
+from sqlalchemy.orm import aliased, session
+import json
+
 
 
 class BookingExecutor:
+
     @staticmethod
     def get_bookings_in_date_range(start_date, end_date) -> List[Booking]:
         return Booking.query.filter(
@@ -25,15 +29,16 @@ class BookingExecutor:
 
     @staticmethod
     def create_booking(room_id: int, title: str, time_start: str, time_end: str, user_ids: List[int]) -> Booking:
+        user_id = get_jwt_identity()
         try:
             new_booking = Booking(
-                room_id=room_id, title=title, time_start=time_start, time_end=time_end, is_accepted=True, is_deleted=False)
+                room_id=room_id, title=title, time_start=time_start, time_end=time_end, is_accepted=True, is_deleted=False, creator_id=user_id)
             db.session.add(new_booking)
             db.session.commit()
 
             for user_id in user_ids:
                 user_booking = BookingUser(
-                    user_id=user_id, booking_id=new_booking.booking_id, is_attending=False)
+                    user_id=user_id, booking_id=new_booking.booking_id)
                 db.session.add(user_booking)
             db.session.commit()
 
@@ -45,12 +50,13 @@ class BookingExecutor:
     @staticmethod
     def get_booking(booking_id: int) -> Optional[Booking]:
         return Booking.query.get(booking_id)
-    
+
     @staticmethod
     def get_booking_user(booking_id: int, user_id: int) -> Optional[Booking]:
-        booking_user=BookingUser.query.filter(BookingUser.booking_id==booking_id, BookingUser.user_id==user_id).first()
+        booking_user = BookingUser.query.filter(
+            BookingUser.booking_id == booking_id, BookingUser.user_id == user_id).first()
         return booking_user
-    
+
     @staticmethod
     def db_commit(booking_id: int) -> Optional[Booking]:
         return Booking.query.get(booking_id)
@@ -97,6 +103,7 @@ class BookingExecutor:
     def search_booking_room(start_date: str, end_date: str, room_id: int) -> List[Booking]:
         bookings = Booking.query.filter(
             Booking.is_deleted == False,
+            Booking.deleted_at == None,
             Booking.time_start >= start_date,
             Booking.time_start <= end_date,
             Booking.room_id == room_id
@@ -107,7 +114,7 @@ class BookingExecutor:
     def check_room_availability(room_id: int, time_start: str, time_end: str) -> Optional[Booking]:
         return Booking.query.filter(
             Booking.room_id == room_id,
-            Booking.is_deleted==False,
+            Booking.is_deleted == False,
             Booking.time_end > time_start,
             Booking.time_start < time_end
         ).first()
@@ -130,7 +137,7 @@ class BookingExecutor:
             db.session.commit()
 
             for id in user_ids:
-                is_attending = id == user_id  
+                is_attending = id == user_id
                 user_booking = BookingUser(
                     user_id=id,
                     booking_id=new_booking.booking_id,
@@ -151,7 +158,7 @@ class BookingExecutor:
 
     @staticmethod
     def admin_view_booking_pending(page: int, per_page: int) -> List[Booking]:
-        bookings = Booking.query.filter(Booking.is_accepted == False, Booking.is_deleted == False).paginate(
+        bookings = Booking.query.filter(Booking.is_accepted == False, Booking.is_deleted == False,Booking.deleted_at == None).paginate(
             page=page, per_page=per_page, error_out=False)
         return bookings
 
@@ -159,8 +166,8 @@ class BookingExecutor:
     def view_list_invite(page: int, per_page: int, user_id: int) -> List[Booking]:
         bookings = Booking.query.join(BookingUser, Booking.booking_id == BookingUser.booking_id).filter(
             Booking.is_deleted == False,
-            Booking.is_accepted==True,
-            Booking.time_start> datetime.now(),
+            Booking.is_accepted == True,
+            Booking.time_start > datetime.now(),
             BookingUser.user_id == user_id
         ).paginate(page=page, per_page=per_page, error_out=False)
         return bookings
