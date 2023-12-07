@@ -308,7 +308,18 @@ class BookingService:
         user_id=get_jwt_identity()
         bookings=BookingExecutor.view_list_invite(page,per_page,user_id)
         list_booking_invite=BookingService.show_list_booking(bookings)
-        return list_booking_invite
+        total_items = bookings.total
+        total_pages = ceil(total_items / per_page)
+        per_page = per_page
+        current_page = page
+        result = {
+            'list_bookings': list_booking_invite,
+            'total_items': total_items,
+            'per_page': per_page,
+            'current_page': current_page,
+            'total_pages': total_pages
+        }
+        return result
     
     @staticmethod
     def user_accept_booking(booking_id: int):
