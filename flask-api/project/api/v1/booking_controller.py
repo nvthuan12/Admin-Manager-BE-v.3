@@ -15,6 +15,7 @@ from typing import Dict
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
+
 @booking_blueprint.route("/bookings", methods=["GET"])
 @jwt_required()
 @has_permission("view")
@@ -27,6 +28,7 @@ def get_bookings() -> dict:
         return BaseResponse.error(e)
     except InternalServerError as e:
         return BaseResponse.error(e)
+
 
 @booking_blueprint.route("/bookings", methods=["POST"])
 @jwt_required()
@@ -46,6 +48,7 @@ def book_room_endpoint() -> dict:
 
     except InternalServerError as e:
         return BaseResponse.error(e)
+
 
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["PUT"])
 @jwt_required()
@@ -68,6 +71,7 @@ def update_booking_endpoint(booking_id: int):
     except InternalServerError as e:
         return BaseResponse.error(e)
 
+
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["DELETE"])
 @jwt_required()
 @has_permission("delete")
@@ -84,6 +88,7 @@ def delete_booking(booking_id: int) -> Dict:
     except IntegrityError:
         db.session.rollback()
         return BaseResponse.error(e)
+
 
 @booking_blueprint.route("/bookings/search_users", methods=["GET"])
 @jwt_required()
@@ -104,18 +109,20 @@ def Search_booking_users():
     except InternalServerError as e:
         return BaseResponse.error(e)
 
+
 @booking_blueprint.route("/bookings/search_room/<int:room_id>", methods=["GET"])
 @jwt_required()
 @has_permission("search")
 def Search_booking_room(room_id: int):
     try:
-        response_data: dict = BookingService.search_booking_room( room_id)
+        response_data: dict = BookingService.search_booking_room(room_id)
         return BaseResponse.success(response_data)
-    
+
     except BadRequest as e:
         return BaseResponse.error(e)
     except InternalServerError as e:
         return BaseResponse.error(e)
+
 
 @booking_blueprint.route("/user/bookings", methods=["GET"])
 @jwt_required()
@@ -129,7 +136,8 @@ def get_user_bookings() -> dict:
         return BaseResponse.error(e)
     except InternalServerError as e:
         return BaseResponse.error(e)
-    
+
+
 @booking_blueprint.route("/user/bookings", methods=["POST"])
 @jwt_required()
 @has_permission("create")
@@ -148,7 +156,8 @@ def book_room_endpoint_user() -> dict:
 
     except InternalServerError as e:
         return BaseResponse.error(e)
-      
+
+
 @booking_blueprint.route("/user/view_booked", methods=["GET"])
 @jwt_required()
 @has_permission("view")
@@ -160,6 +169,7 @@ def user_view_list_booked() -> dict:
         return BaseResponse.success(result)
     except Exception as e:
         raise InternalServerError('Internal Server Error') from e
+
 
 @booking_blueprint.route("/admin/view_booking_pending", methods=["GET"])
 @jwt_required()
@@ -173,6 +183,7 @@ def admin_view_booking_pending() -> dict:
     except Exception as e:
         raise InternalServerError('Internal Server Error') from e
 
+
 @booking_blueprint.route("/bookings/<int:booking_id>", methods=["GET"])
 @jwt_required()
 @has_permission("view")
@@ -183,7 +194,8 @@ def detail_booking(booking_id: int) -> dict:
     except NotFound as e:
         return BaseResponse.error(e)
     except Exception as e:
-        raise InternalServerError(e) 
+        raise InternalServerError(e)
+
 
 @booking_blueprint.route("/bookings/<int:booking_id>/accept", methods=["PUT"])
 @jwt_required()
@@ -192,7 +204,7 @@ def accept_booking_endpoint(booking_id: int):
     try:
         response_data = BookingService.accept_booking(booking_id)
         return response_data
-    
+
     except BadRequest as e:
         return BaseResponse.error(e)
 
@@ -204,7 +216,8 @@ def accept_booking_endpoint(booking_id: int):
 
     except InternalServerError as e:
         return BaseResponse.error(e)
-    
+
+
 @booking_blueprint.route("/bookings/<int:booking_id>/reject", methods=["PUT"])
 @jwt_required()
 @has_permission("update")
@@ -222,5 +235,21 @@ def reject_booking_endpoint(booking_id: int):
     except NotFound as e:
         return BaseResponse.error(e)
 
+    except InternalServerError as e:
+        return BaseResponse.error(e)
+
+
+@booking_blueprint.route("/user/view_list_invite", methods=["GET"])
+@jwt_required()
+@has_permission("view")
+def view_list_invite() -> dict:
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        response_data: dict = BookingService.view_list_invite(page, per_page)
+        return BaseResponse.success(response_data)
+
+    except BadRequest as e:
+        return BaseResponse.error(e)
     except InternalServerError as e:
         return BaseResponse.error(e)

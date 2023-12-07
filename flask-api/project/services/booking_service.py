@@ -19,6 +19,7 @@ class BookingService:
         for booking in bookings:
             user_ids = [booking_user.user.user_id for booking_user in booking.booking_user]
             user_names = [booking_user.user.user_name for booking_user in booking.booking_user]
+            is_attendings = [booking_user.is_attending for booking_user in booking.booking_user]
             user_created= User.query.filter_by(user_id=booking.creator_id).first()
             creator_name=user_created.user_name if user_created else None
             room = Room.query.filter_by(room_id=booking.room_id).first()
@@ -36,7 +37,8 @@ class BookingService:
                 "creator_id": booking.creator_id,
                 "creator_name": creator_name,
                 "is_accepted":booking.is_accepted,
-                "is_deleted":booking.is_deleted
+                "is_deleted":booking.is_deleted,
+                "is_attendings":is_attendings
             }
             list_bookings.append(booking_info) 
         return list_bookings
@@ -300,3 +302,10 @@ class BookingService:
         except Exception as e:
             db.session.rollback()
             raise InternalServerError(e)
+    
+    @staticmethod
+    def view_list_invite(page: int, per_page: int) -> list[Booking]:
+        user_id=get_jwt_identity()
+        bookings=BookingExecutor.view_list_invite(page,per_page,user_id)
+        list_booking_invite=BookingService.show_list_booking(bookings)
+        return list_booking_invite
