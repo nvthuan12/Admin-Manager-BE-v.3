@@ -322,7 +322,7 @@ class BookingService:
         return result
     
     @staticmethod
-    def user_accept_booking(booking_id: int):
+    def user_confirm_booking(booking_id: int):
         user_id = get_jwt_identity()
         booking_user = BookingExecutor.get_booking_user(booking_id, user_id)
         try:
@@ -330,14 +330,14 @@ class BookingService:
 
             db.session.commit()
 
-            return BaseResponse.success('Invitation accepted successfully')
+            return BaseResponse.success('Invitation successfully confirmed')
 
         except Exception as e:
             db.session.rollback()
             raise InternalServerError(e)
         
     @staticmethod
-    def user_reject_booking(booking_id: int):
+    def user_decline_booking(booking_id: int):
         user_id = get_jwt_identity()
         booking_user = BookingExecutor.get_booking_user(booking_id, user_id)
         try:
@@ -345,7 +345,7 @@ class BookingService:
 
             db.session.commit()
 
-            return BaseResponse.success('Invitation declined successfully')
+            return BaseResponse.success('Invitation successfully declined')
 
         except Exception as e:
             db.session.rollback()

@@ -254,12 +254,12 @@ def view_list_invite() -> dict:
     except InternalServerError as e:
         return BaseResponse.error(e)
     
-@booking_blueprint.route("/user/bookings/<int:booking_id>/accept", methods=["PUT"])
+@booking_blueprint.route("/user/bookings/<int:booking_id>/confirm", methods=["PUT"])
 @jwt_required()
 @has_permission("update")
-def user_accept_booking_endpoint(booking_id: int):
+def user_confirm_booking_endpoint(booking_id: int):
     try:
-        response_data = BookingService.user_accept_booking(booking_id)
+        response_data = BookingService.user_confirm_booking(booking_id)
         return response_data
 
     except BadRequest as e:
@@ -274,12 +274,12 @@ def user_accept_booking_endpoint(booking_id: int):
     except InternalServerError as e:
         return BaseResponse.error(e)
 
-@booking_blueprint.route("/user/bookings/<int:booking_id>/reject", methods=["PUT"])
+@booking_blueprint.route("/user/bookings/<int:booking_id>/decline", methods=["PUT"])
 @jwt_required()
 @has_permission("update")
-def user_reject_booking_endpoint(booking_id: int):
+def user_decline_booking_endpoint(booking_id: int):
     try:
-        response_data = BookingService.user_reject_booking(booking_id)
+        response_data = BookingService.user_decline_booking(booking_id)
         return response_data
 
     except BadRequest as e:
