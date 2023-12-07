@@ -204,7 +204,7 @@ class BookingService:
             raise Conflict('Room is already booked for this time')
         else:
             new_booking = BookingExecutor.create_booking_belong_to_user(room_id, title, time_start, time_end, user_ids)
-        return BaseResponse.success( 'Booking created successfully')
+        return BaseResponse.success('Booking created successfully')
 
     @staticmethod
     def user_view_list_booked(page: int, per_page: int) -> List[Booking]:
@@ -309,3 +309,33 @@ class BookingService:
         bookings=BookingExecutor.view_list_invite(page,per_page,user_id)
         list_booking_invite=BookingService.show_list_booking(bookings)
         return list_booking_invite
+    
+    @staticmethod
+    def user_accept_booking(booking_id: int):
+        user_id = get_jwt_identity()
+        booking_user = BookingExecutor.get_booking_user(booking_id, user_id)
+        try:
+            booking_user.is_attending = True
+
+            db.session.commit()
+
+            return BaseResponse.success('Invitation accepted successfully')
+
+        except Exception as e:
+            db.session.rollback()
+            raise InternalServerError(e)
+        
+    @staticmethod
+    def user_reject_booking(booking_id: int):
+        user_id = get_jwt_identity()
+        booking_user = BookingExecutor.get_booking_user(booking_id, user_id)
+        try:
+            booking_user.is_attending = False
+
+            db.session.commit()
+
+            return BaseResponse.success('Invitation declined successfully')
+
+        except Exception as e:
+            db.session.rollback()
+            raise InternalServerError(e)

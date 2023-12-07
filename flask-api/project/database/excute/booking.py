@@ -52,7 +52,12 @@ class BookingExecutor:
     @staticmethod
     def get_booking(booking_id: int) -> Optional[Booking]:
         return Booking.query.get(booking_id)
-
+    
+    @staticmethod
+    def get_booking_user(booking_id: int, user_id: int) -> Optional[Booking]:
+        booking_user=BookingUser.query.filter(BookingUser.booking_id==booking_id, BookingUser.user_id==user_id).first()
+        return booking_user
+    
     @staticmethod
     def db_commit(booking_id: int) -> Optional[Booking]:
         return Booking.query.get(booking_id)
