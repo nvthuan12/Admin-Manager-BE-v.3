@@ -36,12 +36,13 @@ class BookingExecutor:
             db.session.add(new_booking)
             db.session.commit()
 
-            for user_id in user_ids:
-                user_booking = BookingUser(
-                    user_id=user_id, booking_id=new_booking.booking_id)
-                db.session.add(user_booking)
-            db.session.commit()
+            user_bookings = [
+            BookingUser(user_id=id, booking_id=new_booking.booking_id, is_attending=True if id == user_id else None)
+            for id in user_ids
+        ]
 
+            db.session.add_all(user_bookings)
+            db.session.commit()
             return new_booking
         except Exception as e:
             db.session.rollback()
@@ -136,14 +137,12 @@ class BookingExecutor:
             db.session.add(new_booking)
             db.session.commit()
 
-            for id in user_ids:
-                is_attending = id == user_id
-                user_booking = BookingUser(
-                    user_id=id,
-                    booking_id=new_booking.booking_id,
-                    is_attending=is_attending
-                )
-                db.session.add(user_booking)
+            user_bookings = [
+            BookingUser(user_id=id, booking_id=new_booking.booking_id, is_attending=True if id == user_id else None)
+            for id in user_ids
+        ]
+
+            db.session.add_all(user_bookings)
             db.session.commit()
             return new_booking
         except Exception as e:
