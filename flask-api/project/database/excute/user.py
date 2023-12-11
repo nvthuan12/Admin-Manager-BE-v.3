@@ -12,6 +12,7 @@ class UserExecutor:
     @staticmethod
     def get_user_by_email(email: str):
         user = User.query.filter_by(email=email, is_deleted=0).first()
+        print(user)
         return user
 
     @staticmethod
@@ -20,15 +21,21 @@ class UserExecutor:
         return user
 
     @staticmethod
-    def get_role_names(user_id: int):
+    def get_role_names(user_id: int) -> List[str]:
         user = User.query.filter_by(user_id=user_id, is_deleted=0).first()
+        role_names = []
+        if not user:
+            return role_names
+        if not user.user_has_role:
+            return role_names
         role_names = [
             user_role.role.role_name for user_role in user.user_has_role]
         return role_names
 
     @staticmethod
-    def get_permission_names(role_name: str):
+    def get_permission_names(role_name: str) -> List[str]:
         role = Role.query.filter_by(role_name=role_name).first()
+        permission_names=[]
         if role:
             role_permissions = (
                 db.session.query(Permission.permission_name)
@@ -37,14 +44,12 @@ class UserExecutor:
                 .all()
             )
             permission_names = [rp[0] for rp in role_permissions]
-            return permission_names
-        return []
+        return permission_names
 
     @staticmethod
     def get_list_users(page: int, per_page: int)-> List[User]:
         users = User.query.filter_by(is_deleted=False).paginate(
             page=page, per_page=per_page, error_out=False)
-
         return users
 
     @staticmethod
