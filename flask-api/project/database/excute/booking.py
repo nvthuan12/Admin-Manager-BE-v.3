@@ -7,7 +7,6 @@ from sqlalchemy.orm import aliased, session
 import json
 
 
-
 class BookingExecutor:
 
     @staticmethod
@@ -37,9 +36,10 @@ class BookingExecutor:
             db.session.commit()
 
             user_bookings = [
-            BookingUser(user_id=id, booking_id=new_booking.booking_id, is_attending=True if id == user_id else None)
-            for id in user_ids
-        ]
+                BookingUser(user_id=id, booking_id=new_booking.booking_id,
+                            is_attending=True if id == user_id else None)
+                for id in user_ids
+            ]
 
             db.session.add_all(user_bookings)
             db.session.commit()
@@ -138,9 +138,10 @@ class BookingExecutor:
             db.session.commit()
 
             user_bookings = [
-            BookingUser(user_id=id, booking_id=new_booking.booking_id, is_attending=True if id == user_id else None)
-            for id in user_ids
-        ]
+                BookingUser(user_id=id, booking_id=new_booking.booking_id,
+                            is_attending=True if id == user_id else None)
+                for id in user_ids
+            ]
 
             db.session.add_all(user_bookings)
             db.session.commit()
@@ -151,22 +152,32 @@ class BookingExecutor:
 
     @staticmethod
     def user_view_list_booked(page: int, per_page: int, creator_id) -> List[Booking]:
-        bookings = Booking.query.filter(Booking.creator_id == creator_id).paginate(
-            page=page, per_page=per_page, error_out=False)
+        bookings = (Booking.query.filter(
+            Booking.creator_id == creator_id)
+            .order_by(Booking.booking_id.desc())
+            .paginate(page=page, per_page=per_page, error_out=False)
+        )
         return bookings
 
     @staticmethod
     def admin_view_booking_pending(page: int, per_page: int) -> List[Booking]:
-        bookings = Booking.query.filter(Booking.is_accepted == False, Booking.is_deleted == False,Booking.deleted_at == None).paginate(
-            page=page, per_page=per_page, error_out=False)
+        bookings = (Booking.query.filter(
+            Booking.is_accepted == False,
+            Booking.is_deleted == False,
+            Booking.deleted_at == None)
+            .order_by(Booking.booking_id.desc())
+            .paginate(page=page, per_page=per_page, error_out=False)
+        )
         return bookings
 
     @staticmethod
     def view_list_invite(page: int, per_page: int, user_id: int) -> List[Booking]:
-        bookings = Booking.query.join(BookingUser, Booking.booking_id == BookingUser.booking_id).filter(
+        bookings = (Booking.query.join(BookingUser, Booking.booking_id == BookingUser.booking_id).filter(
             Booking.is_deleted == False,
             Booking.is_accepted == True,
             Booking.time_start > datetime.now(),
-            BookingUser.user_id == user_id
-        ).paginate(page=page, per_page=per_page, error_out=False)
+            BookingUser.user_id == user_id)
+            .order_by(Booking.booking_id.desc())
+            .paginate(page=page, per_page=per_page, error_out=False)
+        )
         return bookings
