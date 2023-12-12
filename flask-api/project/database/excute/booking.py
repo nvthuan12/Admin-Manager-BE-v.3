@@ -54,8 +54,14 @@ class BookingExecutor:
 
     @staticmethod
     def get_booking_user(booking_id: int, user_id: int) -> Optional[Booking]:
-        booking_user = BookingUser.query.filter(
-            BookingUser.booking_id == booking_id, BookingUser.user_id == user_id).first()
+        booking_user = BookingUser.query.join(Booking).filter(
+            BookingUser.user_id == user_id,
+            BookingUser.booking_id == booking_id,
+            Booking.is_deleted == False,
+            Booking.is_accepted == True,
+            Booking.booking_id == booking_id
+        ).first()
+        
         return booking_user
 
     @staticmethod
