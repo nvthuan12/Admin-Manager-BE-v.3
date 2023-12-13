@@ -14,6 +14,14 @@ class UserExecutor:
         user = User.query.filter_by(email=email, is_deleted=0).first()
         print(user)
         return user
+    
+    @staticmethod
+    def get_user_email_by_id(user_id):
+        user = User.query.filter_by(user_id=user_id, is_deleted=False).first()
+        if user:
+            return user.email
+        else:
+            return None
 
     @staticmethod
     def get_user(user_id: int):
