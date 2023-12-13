@@ -9,7 +9,9 @@ from project.database.excute.room import RoomExecutor
 from typing import Union, Dict, Optional, List
 from math import ceil
 from flask_jwt_extended import get_jwt_identity
-from project import db
+from project import db, app
+from flask_mail import Message
+import os
 
 class BookingService:
 
