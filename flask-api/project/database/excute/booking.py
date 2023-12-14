@@ -51,6 +51,15 @@ class BookingExecutor:
     @staticmethod
     def get_booking(booking_id: int) -> Optional[Booking]:
         return Booking.query.get(booking_id)
+    
+    @staticmethod
+    def get_booking_creator(booking_id: int) -> Optional[int]:
+        booking = BookingExecutor.get_booking(booking_id)
+        
+        if booking:
+            return booking.creator_id
+        else:
+            return None
 
     @staticmethod
     def get_booking_user(booking_id: int, user_id: int) -> Optional[Booking]:
