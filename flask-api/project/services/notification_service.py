@@ -1,5 +1,5 @@
 from flask_mail import Message
-import os
+import requests
 from project import mail, app, celery, push_service, scheduler
 from werkzeug.exceptions import InternalServerError
 from project.api.common.base_response import BaseResponse

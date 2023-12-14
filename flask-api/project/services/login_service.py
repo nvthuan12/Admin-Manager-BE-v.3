@@ -9,7 +9,7 @@ class AuthService:
     @staticmethod
     def authenticate_user(email: str, password: str, fcm_token: str):
         if not email or not password:
-            raise BadRequest({"error":"Email and password are required."})
+            raise BadRequest("Email and password are required.")
         user = UserExecutor.get_user_by_email(email)
         if not user or not user.check_password(password):
             raise Unauthorized("Invalid email or password.")
@@ -32,3 +32,9 @@ class AuthService:
             {"user_id": user.user_id}
         ]
         return data
+    
+    @staticmethod
+    def logout_user(user_id: int):
+        user = UserExecutor.get_user(user_id)
+        user.fcm_token=None
+        db.session.commit()

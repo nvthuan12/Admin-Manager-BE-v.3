@@ -32,7 +32,7 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 
 mail = Mail(app)
 
-cred = credentials.Certificate('./rikkei-intern-web-2023-firebase-adminsdk-anzt6-68e93153ae.json')
+cred = credentials.Certificate(BaseConfig.FIREBASE_ADMIN_SDK)
 firebase_admin.initialize_app(cred)
 push_service = FCMNotification(api_key=BaseConfig.FCM_SERVER_KEY)
 
@@ -50,8 +50,6 @@ jwt = JWTManager(app)
 with app.app_context():
     from project import models
     db.create_all()
-
-from celery import shared_task
    
 from project.api.v1.login_controller import login_blueprint
 from project.api.v1.user_controller import user_blueprint
