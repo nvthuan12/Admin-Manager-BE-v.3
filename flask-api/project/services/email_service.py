@@ -7,7 +7,7 @@ from project.api.common.base_response import BaseResponse
 
 class EmailSender:
     @celery.task
-    def send_booking_confirmation_email(user_email, title, time_start, time_end, room_name, attendees):
+    def send_email_inviting_join_the_meeting(user_email, title, time_start, time_end, room_name, attendees):
         try:
             with app.app_context():
                 msg = Message(f'[LỜI MỜI THAM GIA]: {title}', sender=os.getenv('MAIL_USERNAME'), recipients=[user_email])
@@ -22,7 +22,7 @@ class EmailSender:
             return BaseResponse.error(e)
         
     @staticmethod
-    def send_booking_acceptance_email(user_email, title, time_start, time_end, room_name, attendees):
+    def send_email_accepting_the_scheduled(user_email, title, time_start, time_end, room_name, attendees):
         try:
             with app.app_context():
                 msg = Message(f'[XÁC NHẬN]: {title}', sender=os.getenv('MAIL_USERNAME'), recipients=[user_email])
