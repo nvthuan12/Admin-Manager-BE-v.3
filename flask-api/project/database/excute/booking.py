@@ -181,3 +181,12 @@ class BookingExecutor:
             .paginate(page=page, per_page=per_page, error_out=False)
         )
         return bookings
+    
+    @staticmethod
+    def get_list_meeting_cooming(time_cooming: str):
+        bookings = Booking.query.filter(
+                Booking.is_deleted == False,
+                Booking.deleted_at == None,
+                Booking.time_start == (time_cooming)
+            ).all()
+        return bookings

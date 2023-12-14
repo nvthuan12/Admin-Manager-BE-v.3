@@ -3,6 +3,8 @@ import os
 from project import mail, app, celery
 from project.api.common.base_response import BaseResponse
 import smtplib
+from project.database.excute.room import RoomExecutor
+from project.models import User, Booking
 
 
 class EmailSender:
@@ -32,3 +34,21 @@ class EmailSender:
 
         except smtplib.SMTPException as e:
             return await BaseResponse.error(e)
+    
+    @staticmethod
+    def send_mail_reminder(booking: Booking, user: User):
+        try:
+            with app.app_context():
+                print("đã vào mail",)
+                attendees=[booking_user.user.user_name for booking_user in booking.booking_user]
+                room= RoomExecutor.get_room_by_id(booking.room_id)
+                msg = Message(f'[THÔNG BÁO]: {booking.title}', sender=os.getenv('MAIL_USERNAME'), recipients=[user.email])
+                msg.body = f'Thông báo cuộc họp\n\n' \
+                           f'Cuộc họp còn 10 phút nữa sẽ bắt đầu!\n\n' \
+                           f'Phòng họp: {room.room_name}\n' \
+                           f'Thời gian: {booking.time_start} - {booking.time_end}\n' \
+                           f'Người tham gia:\n{",\n".join(attendees)}' 
+                mail.send(msg)
+                
+        except InternalServerError as e:
+            return BaseResponse.error(e)
