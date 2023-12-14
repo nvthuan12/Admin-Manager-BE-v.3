@@ -88,11 +88,11 @@ class BookingService:
             raise Conflict('Room is already booked for this time')
         else:
             new_booking = BookingExecutor.create_booking(room_id, title, time_start, time_end, user_ids)
-            BookingService.send_booking_confirmation_emails(new_booking, user_ids)
+            BookingService.send_email_inviting_join_the_meeting(new_booking, user_ids)
         return BaseResponse.success( 'Booking created successfully')
     
     @staticmethod
-    def send_booking_confirmation_emails(new_booking: Booking, user_ids: List[int]):
+    def send_email_inviting_join_the_meeting(new_booking: Booking, user_ids: List[int]):
         for user_id in user_ids:
             user_email = UserExecutor.get_user_email_by_id(user_id)
             title = new_booking.title
@@ -100,7 +100,7 @@ class BookingService:
             time_end = new_booking.time_end
             room_name = new_booking.room.room_name
             attendees = [booking_user.user.user_name for booking_user in new_booking.booking_user]
-            EmailSender.send_booking_confirmation_email(user_email, title, time_start, time_end, room_name, attendees)
+            EmailSender.send_email_inviting_join_the_meeting(user_email, title, time_start, time_end, room_name, attendees)
         
     @staticmethod
     def update_booking(booking_id: int, data: Dict) -> Union[Dict, None]:
@@ -295,7 +295,7 @@ class BookingService:
             booking.is_deleted = False
             booking.deleted_at = None
             user_ids = [user.user_id for user in booking.booking_user]
-            BookingService.send_booking_acceptance_emails(booking, user_ids)
+            BookingService.send_email_accepting_the_scheduled(booking, user_ids)
             db.session.commit()
             return BaseResponse.success('Booking accepted successfully')
 
@@ -304,7 +304,7 @@ class BookingService:
             raise InternalServerError(str(e))
         
     @staticmethod
-    def send_booking_acceptance_emails(booking: Booking, user_ids: List[int]):
+    def send_email_accepting_the_scheduled(booking: Booking, user_ids: List[int]):
         for user_id in user_ids:
             user_email = UserExecutor.get_user_email_by_id(user_id)
             title = booking.title
@@ -312,7 +312,11 @@ class BookingService:
             time_end = booking.time_end
             room_name = booking.room.room_name 
             attendees = [booking_user.user.user_name for booking_user in booking.booking_user]
-            EmailSender.send_booking_acceptance_email(user_email, title, time_start, time_end, room_name, attendees)
+            
+            if user_id == booking.creator_id:
+                EmailSender.send_email_accepting_the_scheduled(user_email, title, time_start, time_end, room_name, attendees)
+            else:
+                EmailSender.send_email_inviting_join_the_meeting(user_email, title, time_start, time_end, room_name, attendees)        
     
     @staticmethod
     def reject_booking(booking_id: int):
