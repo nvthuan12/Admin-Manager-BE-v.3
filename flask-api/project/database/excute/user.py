@@ -16,6 +16,17 @@ class UserExecutor:
         return user
     
     @staticmethod
+    def get_list_user_by_role_name(role_name: str):
+        admins = (User.query
+        .join(UserHasRole,User.user_id==UserHasRole.user_id)
+        .join(Role,UserHasRole.role_id==Role.role_id)
+        .filter(
+            Role.role_name==role_name, 
+            User.is_deleted==0).all()
+        )
+        return admins
+    
+    @staticmethod
     def get_user_email_by_id(user_id):
         user = User.query.filter_by(user_id=user_id, is_deleted=False).first()
         if user:

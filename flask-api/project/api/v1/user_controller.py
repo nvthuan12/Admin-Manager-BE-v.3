@@ -11,7 +11,6 @@ from project.api.v1.has_permission import has_permission
 from project.services.user_service import UserService
 from project.api.common.base_response import BaseResponse
 from datetime import datetime
-from project.services.send_mail import Schedule_mail
 
 user_blueprint = Blueprint('user', __name__)
 
@@ -129,12 +128,3 @@ def get_detail_user(user_id):
         raise BaseResponse.error(e)
     except Exception as e:
         raise InternalServerError(e) 
-    
-@user_blueprint.route('/test', methods=['POST'])
-# @jwt_required()
-# @has_permission("view")
-def push():
- 
-    user= User.query.get(1)
-    Schedule_mail.send_notification_to_users(user)
-    return "success"

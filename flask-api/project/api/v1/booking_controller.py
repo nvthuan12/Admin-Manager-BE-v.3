@@ -10,14 +10,10 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
 from project.api.common.base_response import BaseResponse
 from project.services.booking_service import BookingService
-from project.services.send_mail import Schedule_mail
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict
-from flask_mail import Message 
 
 booking_blueprint = Blueprint('booking_controller', __name__)
-
-scheduler.add_job(func=Schedule_mail.scheduled_send, trigger="cron", id="interval_1",minute="*")
 
 @booking_blueprint.route("/bookings", methods=["GET"])
 @jwt_required()
@@ -152,6 +148,9 @@ def book_room_endpoint_user() -> dict:
         return response_data
 
     except BadRequest as e:
+        return BaseResponse.error(e)
+    
+    except NotFound as e:
         return BaseResponse.error(e)
 
     except Conflict as e:
@@ -296,12 +295,5 @@ def user_decline_booking_endpoint(booking_id: int):
 
     except InternalServerError as e:
         return BaseResponse.error(e)
-    
-@booking_blueprint.route("/send-mail", methods=["POST"])
-def send_mail():
-    recipients=['chuongnt_tts@rikkeisoft.com','vilht_tts@rikkeisoft.com'],
-    Schedule_mail.send_meeting_reminder(recipients)
-    
-    return "send success"
 
 
