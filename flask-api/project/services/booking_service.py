@@ -14,6 +14,7 @@ from project import db, app
 from flask_mail import Message
 import os
 from project.services.email_service import EmailSender
+from project.services.notification_service import PushNotification
 
 class BookingService:
 
@@ -218,8 +219,20 @@ class BookingService:
 
         if existing_booking:
             raise Conflict('Room is already booked for this time')
-        else:
-            new_booking = BookingExecutor.create_booking_belong_to_user(room_id, title, time_start, time_end, user_ids)
+        
+        new_booking = BookingExecutor.create_booking_belong_to_user(room_id, title, time_start, time_end, user_ids)
+        admins=UserExecutor.get_list_user_by_role_name(role_name="admin")
+        if not admins:
+            raise NotFound('Admins not found')
+        
+        id=get_jwt_identity()
+        user= UserExecutor.get_user(id)
+        for admin in admins:
+            if admin.fcm_token:
+                PushNotification.send_notification_reminder(
+                            fcm_token=admin.fcm_token,
+                            message_title="Meeting pending",
+                            message_body="There is a meeting schedule set by")
         return BaseResponse.success('Booking created successfully')
 
     @staticmethod
