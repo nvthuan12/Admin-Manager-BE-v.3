@@ -309,6 +309,18 @@ class BookingService:
             booking.deleted_at = None
             user_ids = [user.user_id for user in booking.booking_user]
             BookingService.send_email_accepting_the_scheduled(booking, user_ids)
+            
+            if booking.creator_id:
+                user = UserExecutor.get_user(user_id=booking.creator_id)
+                if user and user.fcm_token:
+                    PushNotification.send_notification_reminder(
+                        fcm_token=user.fcm_token,
+                        message_title="Booking Accepted",
+                        message_body=f"Your booking with ID {booking_id} has been accepted."
+                    )
+            else:
+                raise NotFound('Creator not found')
+            
             db.session.commit()
             return BaseResponse.success('Booking accepted successfully')
 
