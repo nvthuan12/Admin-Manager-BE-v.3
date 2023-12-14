@@ -3,15 +3,19 @@ from datetime import timedelta
 from werkzeug.exceptions import BadRequest, Unauthorized
 from project.config import BaseConfig
 from flask_jwt_extended import create_access_token
+from project import db
 
 class AuthService:
     @staticmethod
-    def authenticate_user(email: str, password: str):
+    def authenticate_user(email: str, password: str, fcm_token: str):
         if not email or not password:
             raise BadRequest({"error":"Email and password are required."})
         user = UserExecutor.get_user_by_email(email)
         if not user or not user.check_password(password):
             raise Unauthorized("Invalid email or password.")
+        
+        user.fcm_token=fcm_token
+        db.session.commit()
         return user
 
     @staticmethod

@@ -22,7 +22,8 @@ def login():
         data = request.get_json()
         email = data.get('email')
         password = data.get('password')
-        user = AuthService.authenticate_user(email, password)
+        fcm_token= data.get('fcm_token')
+        user = AuthService.authenticate_user(email, password,fcm_token)
         response = AuthService.login_user(user)
         return BaseResponse.success(response, "success", 200)
     except BadRequest as e:

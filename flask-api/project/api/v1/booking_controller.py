@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from project import db
+from project import db, mail, scheduler
 from project.models.user import User
 from project.models.booking import Booking
 from project.models.room import Room
@@ -10,11 +10,14 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, NotFound, Conflict, InternalServerError
 from project.api.common.base_response import BaseResponse
 from project.services.booking_service import BookingService
+from project.services.send_mail import Schedule_mail
 from datetime import datetime, timedelta
 from typing import Dict
+from flask_mail import Message 
 
 booking_blueprint = Blueprint('booking_controller', __name__)
 
+scheduler.add_job(func=Schedule_mail.scheduled_send, trigger="cron", id="interval_1",minute="*")
 
 @booking_blueprint.route("/bookings", methods=["GET"])
 @jwt_required()
@@ -293,3 +296,12 @@ def user_decline_booking_endpoint(booking_id: int):
 
     except InternalServerError as e:
         return BaseResponse.error(e)
+    
+@booking_blueprint.route("/send-mail", methods=["POST"])
+def send_mail():
+    recipients=['chuongnt_tts@rikkeisoft.com','vilht_tts@rikkeisoft.com'],
+    Schedule_mail.send_meeting_reminder(recipients)
+    
+    return "send success"
+
+

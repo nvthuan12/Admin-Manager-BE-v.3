@@ -15,6 +15,7 @@ class User(db.Model):
     created_at = db.Column(db.TIMESTAMP, nullable=False)
     updated_at = db.Column(db.TIMESTAMP, nullable=False)
     is_deleted = db.Column(db.Boolean, nullable=False)
+    fcm_token = db.Column(db.String(255), nullable=True)
     booking = db.relationship('Booking', backref='user')
     booking_user = db.relationship('BookingUser', backref='user')
     user_has_role = db.relationship('UserHasRole', backref='user')
@@ -35,6 +36,7 @@ class User(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'is_deleted': self.is_deleted,
+            'fcm_token': self.fcm_token,
             'bookings': [booking.serialize() for booking in self.booking_user],
             'roles': [role.serialize() for role in self.user_has_role]
         }
