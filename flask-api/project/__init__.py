@@ -44,29 +44,6 @@ scheduler.init_app(app)
 scheduler.start()
 
 
-app.config['CELERY_BROKER_URL'] =  BaseConfig.CELERY_BROKER_URL
-app.config['CELERY_RESULT_BACKEND'] = BaseConfig.CELERY_RESULT_BACKEND
-app.config['MAIL_SERVER'] = BaseConfig.MAIL_SERVER
-app.config['MAIL_PORT'] = BaseConfig.MAIL_PORT
-app.config['MAIL_USERNAME'] = BaseConfig.MAIL_USERNAME
-app.config['MAIL_PASSWORD'] = BaseConfig.MAIL_PASSWORD
-app.config['MAIL_USE_TLS'] = BaseConfig.MAIL_USE_TLS
-app.config['MAIL_USE_SSL'] = BaseConfig.MAIL_USE_SSL
-app.config['MAIL_DEFAULT_SENDER'] = BaseConfig.MAIL_DEFAULT_SENDER
-
-mail = Mail(app)
-
-# push_service = FCMNotification(api_key=BaseConfig.FCM_SERVER_KEY)
-# cred = credentials.Certificate('./fir-d8b4e-firebase-adminsdk-a7lj0-a377d2856c.json')
-# firebase_admin.initialize_app(cred)
-
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
-celery.conf.update(app.config)
-
-scheduler =  APScheduler()
-scheduler.init_app(app)
-scheduler.start()
-
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
@@ -75,18 +52,7 @@ with app.app_context():
     db.create_all()
 
 from celery import shared_task
-
-@shared_task(ignore_result=False)
-def add_together(a: int, b: int) -> int:
-    return a + b
-
-@app.post("/add")
-def start_add() -> dict[str, object]:
-    a = request.form.get("a", type=int)
-    b = request.form.get("b", type=int)
-    result = add_together.delay(a, b)
-    return {"result_id": result.id}
-    
+   
 from project.api.v1.login_controller import login_blueprint
 from project.api.v1.user_controller import user_blueprint
 from project.api.v1.room_controller import room_blueprint
