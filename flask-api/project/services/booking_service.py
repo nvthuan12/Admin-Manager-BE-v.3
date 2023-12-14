@@ -2,7 +2,7 @@ from project.database.excute.booking import BookingExecutor
 from project.database.excute.user import UserExecutor
 from project.models import Room, Booking, BookingUser, User
 from project.api.common.base_response import BaseResponse
-from werkzeug.exceptions import BadRequest, InternalServerError, Conflict, NotFound
+from werkzeug.exceptions import BadRequest, InternalServerError, Conflict, NotFound, UnprocessableEntity
 from flask import request
 from datetime import datetime, timedelta
 from typing import List
@@ -369,7 +369,7 @@ class BookingService:
 
         except Exception as e:
             db.session.rollback()
-            raise InternalServerError(e)
+            raise UnprocessableEntity(str(e))
         
     @staticmethod
     def user_decline_booking(booking_id: int):
