@@ -357,7 +357,7 @@ class BookingService:
                 if user and user.fcm_token:
                     PushNotification.send_notification_reminder(
                         fcm_token=user.fcm_token,
-                        message_title="Booking Accepted",
+                        message_title="Booking Rejected",
                         message_body=f"The booking '{booking.title}' scheduled for {booking.time_start} - {booking.time_end} has been rejected."
                     )
             else:
