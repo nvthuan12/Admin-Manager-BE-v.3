@@ -35,6 +35,6 @@ def login():
 @login_blueprint.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
-    response = jsonify(message='Logout successfully')
-    unset_jwt_cookies(response)
+    user_id=get_jwt_identity()
+    AuthService.logout_user(user_id)
     return BaseResponse.success(message="Logout successfully!")

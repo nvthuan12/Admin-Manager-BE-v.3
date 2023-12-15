@@ -12,7 +12,6 @@ class UserExecutor:
     @staticmethod
     def get_user_by_email(email: str):
         user = User.query.filter_by(email=email, is_deleted=0).first()
-        print(user)
         return user
     
     @staticmethod

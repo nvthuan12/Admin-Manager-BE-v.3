@@ -224,16 +224,15 @@ class BookingService:
         admins=UserExecutor.get_list_user_by_role_name(role_name="admin")
         if not admins:
             raise NotFound('Admins not found')
+        creator=UserExecutor.get_user(user_id=new_booking.creator_id)
         
-        id=get_jwt_identity()
-        user= UserExecutor.get_user(id)
         for admin in admins:
             if admin.fcm_token:
                 PushNotification.send_notification_reminder(
                             fcm_token=admin.fcm_token,
                             message_title="Meeting pending",
-                            message_body="There is a meeting schedule set by")
-        return BaseResponse.success(message='Booking created successfully')
+                            message_body=f"There is a meeting schedule set by {creator.user_name}")
+        return BaseResponse.success('Booking created successfully')
 
     @staticmethod
     def user_view_list_booked(page: int, per_page: int) -> List[Booking]:
