@@ -13,7 +13,6 @@ class PushNotification:
 
     @staticmethod
     def send_notification_reminder(fcm_token: str, message_title: str, message_body: str ):
-        print("đã vào đây,",message_title)
         push_service.notify_single_device(
             registration_id=fcm_token, 
             message_title=message_title, 
@@ -25,7 +24,6 @@ class PushNotification:
         with app.app_context():
             curent_time = datetime.now().replace(second=0, microsecond=0)
             time_cooming= curent_time+ timedelta(minutes=10)
-            print("time:",time_cooming)
             bookings=BookingExecutor.get_list_meeting_cooming(time_cooming)
             if bookings:
                 users = []

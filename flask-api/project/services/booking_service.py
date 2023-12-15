@@ -390,8 +390,6 @@ class BookingService:
         bookings=BookingExecutor.view_list_invite(page,per_page,user_id)
         list_booking_invite=BookingService.show_list_booking(bookings)
         return list_booking_invite
-        
-        # return bookings
     
     @staticmethod
     def user_confirm_booking(booking_id: int):
@@ -399,10 +397,15 @@ class BookingService:
         booking_user = BookingExecutor.get_booking_user(booking_id, user_id)
         try:
             booking_user.is_attending = True
-
             db.session.commit()
-
-            return BaseResponse.success(message='Invitation successfully confirmed')
+            booking = BookingExecutor.get_booking(booking_id)
+            creator=UserExecutor.get_user(user_id=booking.creator_id)
+            if creator.fcm_token:
+                PushNotification.send_notification_reminder(
+                            fcm_token=creator.fcm_token,
+                            message_title="Invitation confirme",
+                            message_body=f"{creator.user_name} confirm participation in meeting schedule")
+            return BaseResponse.success('Invitation successfully confirmed')
 
         except Exception as e:
             db.session.rollback()
@@ -416,9 +419,15 @@ class BookingService:
             booking_user.is_attending = False
 
             db.session.commit()
-
-            return BaseResponse.success(message='Invitation successfully declined')
-
+            booking = BookingExecutor.get_booking(booking_id)
+            creator=UserExecutor.get_user(user_id=booking.creator_id)
+            if creator.fcm_token:
+                PushNotification.send_notification_reminder(
+                            fcm_token=creator.fcm_token,
+                            message_title="Invitation confirme",
+                            message_body=f"{creator.user_name} decline participation in meeting schedule"
+                        )
+            return BaseResponse.success('Invitation successfully declined')
         except Exception as e:
             db.session.rollback()
             raise InternalServerError(e)
