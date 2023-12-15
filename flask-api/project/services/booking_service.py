@@ -90,7 +90,7 @@ class BookingService:
         else:
             new_booking = BookingExecutor.create_booking(room_id, title, time_start, time_end, user_ids)
             BookingService.send_email_inviting_join_the_meeting(new_booking, user_ids)
-        return BaseResponse.success( 'Booking created successfully')
+        return BaseResponse.success(message='Booking created successfully')
     
     @staticmethod
     def send_email_inviting_join_the_meeting(new_booking: Booking, user_ids: List[int]):
@@ -135,7 +135,7 @@ class BookingService:
 
             BookingExecutor.update_booking(booking, room_id, title, time_start, time_end, user_ids,)
 
-            return BaseResponse.success( 'Booking updated successfully')
+            return BaseResponse.success(message='Booking updated successfully')
     
     @staticmethod
     def delete_booking_service(booking_id: int) -> Dict:
@@ -156,7 +156,7 @@ class BookingService:
         booking.deleted_at = datetime.now()
 
         BookingExecutor.commit()
-        return BaseResponse.success( 'Booking deleted successfully')
+        return BaseResponse.success(message='Booking deleted successfully')
     
     @staticmethod
     def search_booking_users(start_date: str, end_date: str ,user_ids: List[int] ) -> List[Booking]:
@@ -233,7 +233,7 @@ class BookingService:
                             fcm_token=admin.fcm_token,
                             message_title="Meeting pending",
                             message_body="There is a meeting schedule set by")
-        return BaseResponse.success('Booking created successfully')
+        return BaseResponse.success(message='Booking created successfully')
 
     @staticmethod
     def user_view_list_booked(page: int, per_page: int) -> List[Booking]:
@@ -316,13 +316,13 @@ class BookingService:
                     PushNotification.send_notification_reminder(
                         fcm_token=user.fcm_token,
                         message_title="Booking Accepted",
-                        message_body=f"Your booking with ID {booking_id} has been accepted."
+                        message_body=f"The booking '{booking.title}' scheduled for {booking.time_start} - {booking.time_end} has been accepted."
                     )
             else:
                 raise NotFound('Creator not found')
             
             db.session.commit()
-            return BaseResponse.success('Booking accepted successfully')
+            return BaseResponse.success(message='Booking accepted successfully')
 
         except Exception as e:
             db.session.rollback()
@@ -350,14 +350,40 @@ class BookingService:
             booking.is_accepted = False
             booking.is_deleted = True
             booking.deleted_at = datetime.now()
+            user_ids = [user.user_id for user in booking.booking_user]
+            BookingService.send_email_rejecting_the_scheduled(booking, user_ids)
+            
+            if booking.creator_id:
+                user = UserExecutor.get_user(user_id=booking.creator_id)
+                if user and user.fcm_token:
+                    PushNotification.send_notification_reminder(
+                        fcm_token=user.fcm_token,
+                        message_title="Booking Accepted",
+                        message_body=f"The booking '{booking.title}' scheduled for {booking.time_start} - {booking.time_end} has been rejected."
+                    )
+            else:
+                raise NotFound('Creator not found')
 
             db.session.commit()
 
-            return BaseResponse.success('Booking rejected successfully')
+            return BaseResponse.success(message='Booking rejected successfully')
 
         except Exception as e:
             db.session.rollback()
             raise InternalServerError(e)
+        
+    @staticmethod
+    def send_email_rejecting_the_scheduled(booking: Booking, user_ids: List[int]):
+        for user_id in user_ids:
+            user_email = UserExecutor.get_user_email_by_id(user_id)
+            title = booking.title
+            time_start = booking.time_start
+            time_end = booking.time_end
+            room_name = booking.room.room_name 
+            attendees = [booking_user.user.user_name for booking_user in booking.booking_user]
+            
+            if user_id == booking.creator_id:
+                EmailSender.send_email_rejecting_the_scheduled(user_email, title, time_start, time_end, room_name, attendees)     
     
     @staticmethod
     def view_list_invite(page: int, per_page: int) -> list[Booking]:
@@ -377,7 +403,7 @@ class BookingService:
 
             db.session.commit()
 
-            return BaseResponse.success('Invitation successfully confirmed')
+            return BaseResponse.success(message='Invitation successfully confirmed')
 
         except Exception as e:
             db.session.rollback()
@@ -392,7 +418,7 @@ class BookingService:
 
             db.session.commit()
 
-            return BaseResponse.success('Invitation successfully declined')
+            return BaseResponse.success(message='Invitation successfully declined')
 
         except Exception as e:
             db.session.rollback()
