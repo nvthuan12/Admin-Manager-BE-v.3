@@ -52,7 +52,6 @@ class EmailSender:
     def send_mail_reminder(booking: Booking, user: User):
         try:
             with app.app_context():
-                print("đã vào mail",)
                 attendees=[booking_user.user.user_name for booking_user in booking.booking_user]
                 room= RoomExecutor.get_room_by_id(booking.room_id)
                 msg = Message(f'[THÔNG BÁO]: {booking.title}', sender=os.getenv('MAIL_USERNAME'), recipients=[user.email])
