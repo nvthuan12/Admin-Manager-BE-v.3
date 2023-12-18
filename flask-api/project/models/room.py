@@ -1,6 +1,7 @@
 from project.models import db
 from sqlalchemy.orm import validates  
 from werkzeug.exceptions import BadRequest
+from typing import Optional, Dict
 
 class Room(db.Model):
     __tablename__ = "room"
@@ -28,8 +29,10 @@ class Room(db.Model):
         return None
 
     @staticmethod
-    def validate_description(description: str) -> dict[str,str] | None:
-        if not description.strip():
+    def validate_description(description: Optional[str]) -> Optional[Dict[str, str]]:
+        if description is None:
+            return {"field": "description", "error": "Description is required"}
+        elif not description.strip():
             return {"field": "description", "error": "Description cannot be empty or contain only whitespace"}
         elif len(description) > 255:
             return {"field": "description", "error": "Description exceeds maximum length (255 characters)"}
